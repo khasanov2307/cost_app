@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Расчет сметы</title>
+<style>
+/* ------------------------------------------------------------------ */
+/*  Веб-версия «Расчет сметы». Стили страницы.                         */
+/* ------------------------------------------------------------------ */
+
+:root {
+    --bg: var(--bg);
+    --panel: #ffffff;
+    --border: var(--border);
+    --text: var(--text);
+    --muted: var(--muted);
+    --accent: var(--accent);
+    --accent-text: #ffffff;
+    --row-hover: var(--row-hover);
+    --row-picked: var(--row-picked);
+    --header: var(--header);
+    --group: var(--group);
+    --field: #ffffff;
+    --total: var(--total);
+}
+
+body.dark {
+    --bg: #191d24;
+    --panel: #232833;
+    --border: #454e5e;
+    --text: #e6eaf2;
+    --muted: #9aa4b5;
+    --accent: #4d8ae0;
+    --accent-text: #0f1319;
+    --row-hover: #2a3140;
+    --row-picked: #26374d;
+    --header: #2a303c;
+    --group: #2d3542;
+    --field: #1e232c;
+    --total: #8fbaff;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.45 "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 18px 16px 90px; }
+
+header.top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(20, 30, 50, .05);
+}
+
+header.top h1 { margin: 0; font-size: 21px; font-weight: 600; }
+header.top .hint { color: var(--muted); font-size: 13px; }
+
+.tabs { display: flex; gap: 6px; margin: 14px 0 10px; }
+
+.tab {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.toolbar input[type="search"] {
+    flex: 1 1 220px;
+    min-width: 180px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font: inherit;
+    background: var(--panel);
+}
+
+button {
+    padding: 8px 13px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 1px rgba(20, 30, 50, .06);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+button:hover { background: var(--row-hover); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+button.primary:hover { filter: brightness(0.94); }
+button.danger { color: #c0392b; }
+button.mini { padding: 2px 8px; font-size: 13px; }
+
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+
+/* ------------------------------------------------------- список услуг */
+
+.group-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--group);
+    border-top: 1px solid var(--border);
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+}
+
+.group-head .marker {
+    width: 16px;
+    text-align: center;
+    color: var(--accent);
+    font-size: 17px;
+    line-height: 1;
+}
+
+.group-head .group-name { flex: 1; text-transform: uppercase; font-size: 13.5px; letter-spacing: .3px; }
+.group-head .group-total { color: var(--accent); font-size: 13px; }
+
+table.items { width: 100%; border-collapse: collapse; }
+
+table.items th {
+    padding: 7px 8px;
+    background: var(--header);
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+table.items td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+
+table.items tr.picked { background: var(--row-picked); }
+table.items tr:hover { background: var(--row-hover); }
+
+td.num, th.num { width: 42px; color: var(--muted); text-align: center; }
+td.article, th.article { width: 110px; color: var(--muted); }
+td.unit, th.unit { width: 96px; color: var(--muted); }
+td.qty, th.qty { width: 84px; }
+td.price, th.price { width: 110px; text-align: right; }
+td.sum, th.sum { width: 120px; text-align: right; font-weight: 600; }
+th.pick, td.pick { width: 44px; text-align: center; }
+td.name { }
+
+td.qty input {
+    width: 62px;
+    padding: 4px 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+    text-align: right;
+    background: var(--field);
+    color: var(--text);
+    box-shadow: inset 0 1px 2px rgba(20, 30, 50, .06);
+}
+
+input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--accent); }
+
+/* ------------------------------------------------------ прайс-лист */
+
+table.editor td { padding: 3px 5px; }
+table.editor input[type="text"], table.editor select {
+    width: 100%;
+    padding: 5px 7px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+    background: var(--panel);
+}
+table.editor input.right { text-align: right; }
+table.editor th.group { width: 180px; }
+table.editor th.article { width: 120px; }
+table.editor th.unit { width: 120px; }
+table.editor th.price { width: 120px; }
+table.editor th.act, table.editor td.act { width: 46px; text-align: center; }
+
+/* --------------------------------------------------------- итог */
+
+footer.total {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 12px 20px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 8px rgba(20, 30, 50, .06);
+}
+
+footer.total .sum { font-size: 22px; font-weight: 700; color: var(--total); }
+footer.total .counter { color: var(--muted); font-size: 13px; }
+footer.total .actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+
+.status { padding: 10px 4px; color: var(--muted); font-size: 13px; }
+.empty { padding: 24px; text-align: center; color: var(--muted); }
+
+.doc-row { margin-bottom: 8px; }
+.doc-row label { color: var(--muted); font-size: 13.5px; }
+.doc-row input[type="text"], .doc-row input[type="search"], .doc-row select {
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font: inherit;
+    background: var(--field);
+    color: var(--text);
+    box-shadow: inset 0 1px 2px rgba(20, 30, 50, .06);
+    color: var(--text);
+    box-shadow: inset 0 1px 2px rgba(20, 30, 50, .06);
+}
+.doc-row input:focus, .doc-row select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:focus-visible, .file-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.doc-row input#docNumber { width: 130px; }
+.doc-row input#docCustomer { flex: 0 1 280px; min-width: 160px; }
+.doc-row input#docDiscount { width: 80px; text-align: right; }
+.doc-row select#templateBox { min-width: 220px; }
+.spacer { flex: 1 1 auto; }
+.file-button {
+    padding: 8px 13px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 1px rgba(20, 30, 50, .06);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+.file-button:hover { background: var(--row-hover); }
+
+/* ------------------------------------------------------- смета */
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    background: rgba(20, 28, 42, .55);
+    overflow: auto;
+    padding: 24px 12px;
+    z-index: 10;
+}
+
+.overlay.open { display: block; }
+
+.sheet {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 26px 30px 30px;
+    background: var(--panel);
+    border-radius: 10px;
+}
+
+.sheet h1 { margin: 0 0 6px; text-align: center; font-size: 23px; letter-spacing: 1px; }
+.sheet .meta { margin: 0 0 16px; text-align: center; color: var(--muted); font-size: 13px; }
+
+table.estimate { margin-bottom: 18px; }
+table.estimate th { background: var(--header); border-bottom: 1px solid var(--border); }
+table.estimate tr.group-row td {
+    background: var(--group);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: .3px;
+}
+table.estimate tr.total-row td { border-top: 2px solid var(--border); font-weight: 700; font-size: 15px; }
+
+table.sign { width: 100%; margin-top: 26px; border-collapse: collapse; }
+table.sign td { padding-top: 22px; color: var(--text); }
+
+.sheet .tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+
+/* ------------------------------------------------------ печать */
+
+@media print {
+    body { background: var(--panel); }
+    .wrap, header.top, .tabs, .toolbar, footer.total, .status, .no-print { display: none !important; }
+    .overlay { position: static; display: block; background: var(--panel); padding: 0; }
+    .sheet { max-width: none; padding: 0; border-radius: 0; }
+    table.estimate { font-size: 12px; }
+    .sheet .tools { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+    <header class="top">
+        <h1>Расчет сметы</h1>
+        <span class="hint">Веб-версия: работает в браузере, данные хранятся в самом браузере</span>
+    </header>
+
+    <div class="tabs no-print">
+        <button type="button" class="tab active" id="calcTab">Смета</button>
+        <button type="button" class="tab" id="priceTab">Прайс-лист</button>
+    </div>
+
+    <!-- ------------------------------------------------ расчёт сметы -->
+    <div id="panelCalc">
+        <div class="toolbar no-print">
+            <input type="search" id="search" placeholder="Поиск по наименованию, артикулу или разделу">
+            <button type="button" id="markAll">Отметить всё</button>
+            <button type="button" id="clearMarks">Снять отметки</button>
+            <span class="spacer"></span>
+            <button type="button" id="themeButton">Тёмная тема</button>
+            <button type="button" id="exportData">Выгрузить данные</button>
+            <label class="file-button">
+                Загрузить данные
+                <input type="file" id="importData" accept=".smeta,.json" style="display:none">
+            </label>
+        </div>
+        <div class="toolbar doc-row">
+            <label for="docNumber">Номер сметы:</label>
+            <input type="text" id="docNumber" placeholder="например 12/2026">
+            <label for="docCustomer">Заказчик (ФИО):</label>
+            <input type="text" id="docCustomer" placeholder="Фамилия Имя Отчество">
+            <label for="docDiscount">Скидка, %:</label>
+            <input type="text" inputmode="decimal" id="docDiscount" placeholder="0">
+        </div>
+
+        <div class="toolbar doc-row">
+            <label for="templateBox">Набор услуг:</label>
+            <select id="templateBox"></select>
+            <button type="button" id="templateApply" disabled>Применить</button>
+            <button type="button" id="templateSave">Сохранить набор</button>
+            <button type="button" id="templateDelete" disabled>Удалить</button>
+            <label for="templateSearch">Поиск набора:</label>
+            <input type="search" id="templateSearch" placeholder="название или услуга">
+        </div>
+
+        <div class="panel" id="list"></div>
+    </div>
+
+    <!-- ------------------------------------------------ прайс-лист -->
+    <div id="panelPrice" style="display:none">
+        <div class="toolbar no-print">
+            <button type="button" id="addItem">Добавить позицию</button>
+            <button type="button" id="exportCsv">Выгрузить в файл</button>
+            <button type="button" id="resetPrices">Вернуть заводские цены</button>
+            <label class="tab" style="cursor:pointer">
+                Загрузить из файла
+                <input type="file" id="importCsv" accept=".tsv,.txt,.csv" style="display:none">
+            </label>
+        </div>
+        <div class="panel" id="editor"></div>
+    </div>
+
+    <div class="status" id="status"></div>
+</div>
+
+<footer class="total no-print">
+    <span class="sum" id="total">ИТОГО: 0,00 ₽</span>
+    <span class="counter" id="counter"></span>
+    <span class="actions">
+        <button type="button" id="clearAll">Сброс отметок</button>
+        <button type="button" id="preview">Предпросмотр</button>
+        <button type="button" id="downloadText">Сохранить текстом</button>
+        <button type="button" class="primary" id="estimate">Сформировать смету</button>
+    </span>
+</footer>
+
+<!-- ------------------------------------------------------- смета -->
+<div class="overlay" id="overlay">
+    <div class="sheet">
+        <div class="tools">
+            <button type="button" class="primary" id="wordSheet">Сохранить в Word</button>
+            <button type="button" id="printSheet">Печать / Сохранить в PDF</button>
+            <button type="button" id="copyText">Копировать текстом</button>
+            <button type="button" id="closeSheet">Закрыть</button>
+        </div>
+        <div id="sheet"></div>
+    </div>
+</div>
+
+<script>
+// Заводской прайс-лист (встраивается при сборке файла).
+window.SEED_PRICES = /*__PRICES__*/[]/*__END_PRICES__*/;
+</script>
+<script>
+/*__APP__*/
+</script>
+</body>
+</html>

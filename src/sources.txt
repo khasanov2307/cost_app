@@ -1,0 +1,11 @@
+Kotov.cs
+SimpleJson.cs
+AppSettings.cs
+DataExchange.cs
+DocumentBuilder.cs
+PriceBook.cs
+EstimateDocx.cs
+MainFormFeatures.cs
+PriceEditorForm.cs
+MainForm.cs
+Program.cs
