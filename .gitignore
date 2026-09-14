@@ -4,6 +4,8 @@ tests/*.exe
 # Временные файлы проверок
 tests/program-estimate.docx
 tests/docx-check.docx
+tests/Смета_из_браузера.docx
+tests/web_estimate.png
 tests/download/
 *.tmp
 
