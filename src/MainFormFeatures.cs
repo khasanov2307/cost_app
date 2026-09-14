@@ -56,37 +56,74 @@ namespace KotovCalc
 
         // ------------------------------------------------- панель с реквизитами
 
-        /// <summary>Вторая и третья строки верхней панели, кнопки нижней панели.</summary>
+        /// <summary>Наборы услуг и реквизиты документа в верхней панели, кнопки — в нижней.</summary>
         private void BuildExtraToolbar(Panel top, Panel bottom)
         {
-            top.Height = 84;
+            top.Height = 124;
 
+            // --- первая строка: наборы услуг ---
+            Label lblTemplate = MakeLabel("Набор услуг:");
+            lblTemplate.Location = new Point(14, 54);
+            top.Controls.Add(lblTemplate);
+
+            _templateBox = new ComboBox();
+            _templateBox.Location = new Point(104, 50);
+            _templateBox.Width = 300;
+            _templateBox.DropDownStyle = ComboBoxStyle.DropDown;
+            top.Controls.Add(_templateBox);
+
+            _btnTemplateApply = MakeButton("Применить", 110);
+            _btnTemplateApply.Location = new Point(416, 49);
+            _btnTemplateApply.Click += delegate { ApplyTemplate(); };
+            top.Controls.Add(_btnTemplateApply);
+
+            Button btnTemplateSave = MakeButton("Сохранить набор", 160);
+            btnTemplateSave.Location = new Point(532, 49);
+            btnTemplateSave.Click += delegate { SaveTemplate(); };
+            top.Controls.Add(btnTemplateSave);
+
+            _btnTemplateDelete = MakeButton("Удалить", 100);
+            _btnTemplateDelete.Location = new Point(698, 49);
+            _btnTemplateDelete.Click += delegate { DeleteTemplate(); };
+            top.Controls.Add(_btnTemplateDelete);
+
+            Label lblSearch = MakeLabel("Поиск набора:");
+            lblSearch.Location = new Point(812, 54);
+            top.Controls.Add(lblSearch);
+
+            _templateSearch = new TextBox();
+            _templateSearch.Location = new Point(920, 50);
+            _templateSearch.Width = 190;
+            _templateSearch.TextChanged += Template_Selected;
+            top.Controls.Add(_templateSearch);
+
+            // --- вторая строка: номер сметы, заказчик и скидка ---
             Label lblNumber = MakeLabel("Номер сметы:");
-            lblNumber.Location = new Point(14, 54);
+            lblNumber.Location = new Point(14, 92);
             top.Controls.Add(lblNumber);
 
             _numberBox = new TextBox();
-            _numberBox.Location = new Point(104, 50);
+            _numberBox.Location = new Point(110, 88);
             _numberBox.Width = 90;
             _numberBox.TextChanged += DocumentFields_Changed;
             top.Controls.Add(_numberBox);
 
             Label lblCustomer = MakeLabel("Заказчик (ФИО):");
-            lblCustomer.Location = new Point(214, 54);
+            lblCustomer.Location = new Point(214, 92);
             top.Controls.Add(lblCustomer);
 
             _customerBox = new TextBox();
-            _customerBox.Location = new Point(324, 50);
+            _customerBox.Location = new Point(324, 88);
             _customerBox.Width = 320;
             _customerBox.TextChanged += DocumentFields_Changed;
             top.Controls.Add(_customerBox);
 
             Label lblDiscount = MakeLabel("Скидка, %:");
-            lblDiscount.Location = new Point(664, 54);
+            lblDiscount.Location = new Point(664, 92);
             top.Controls.Add(lblDiscount);
 
             _discountBox = new NumericUpDown();
-            _discountBox.Location = new Point(736, 50);
+            _discountBox.Location = new Point(736, 88);
             _discountBox.Width = 90;
             _discountBox.DecimalPlaces = 1;
             _discountBox.Minimum = 0m;
@@ -95,42 +132,6 @@ namespace KotovCalc
             _discountBox.TextAlign = HorizontalAlignment.Right;
             _discountBox.ValueChanged += DocumentFields_Changed;
             top.Controls.Add(_discountBox);
-
-            // --- наборы услуг: первая строка нижней панели ---
-            Label lblTemplate = MakeLabel("Набор услуг:");
-            lblTemplate.Location = new Point(14, 96);
-            bottom.Controls.Add(lblTemplate);
-
-            _templateBox = new ComboBox();
-            _templateBox.Location = new Point(104, 92);
-            _templateBox.Width = 240;
-            _templateBox.DropDownStyle = ComboBoxStyle.DropDown;
-            bottom.Controls.Add(_templateBox);
-
-            _btnTemplateApply = MakeButton("Применить", 110);
-            _btnTemplateApply.Location = new Point(356, 91);
-            _btnTemplateApply.Click += delegate { ApplyTemplate(); };
-            bottom.Controls.Add(_btnTemplateApply);
-
-            Button btnTemplateSave = MakeButton("Сохранить набор", 160);
-            btnTemplateSave.Location = new Point(472, 91);
-            btnTemplateSave.Click += delegate { SaveTemplate(); };
-            bottom.Controls.Add(btnTemplateSave);
-
-            _btnTemplateDelete = MakeButton("Удалить", 100);
-            _btnTemplateDelete.Location = new Point(638, 91);
-            _btnTemplateDelete.Click += delegate { DeleteTemplate(); };
-            bottom.Controls.Add(_btnTemplateDelete);
-
-            Label lblSearch = MakeLabel("Поиск набора:");
-            lblSearch.Location = new Point(752, 96);
-            bottom.Controls.Add(lblSearch);
-
-            _templateSearch = new TextBox();
-            _templateSearch.Location = new Point(860, 92);
-            _templateSearch.Width = 190;
-            _templateSearch.TextChanged += Template_Selected;
-            bottom.Controls.Add(_templateSearch);
 
             // --- нижняя панель: данные, тема, предпросмотр, подытог ---
             Button btnData = MakeButton("Данные…", 110);
