@@ -10,22 +10,31 @@
 /* ------------------------------------------------------------------ */
 
 :root {
-    --bg: var(--bg);
+    /* светлая тема */
+    --bg: #f2f4f7;
     --panel: #ffffff;
-    --border: var(--border);
-    --text: var(--text);
-    --muted: var(--muted);
-    --accent: var(--accent);
+    --border: #c3cbd8;
+    --text: #1d2430;
+    --muted: #6b7688;
+    --accent: #2f6fd0;
     --accent-text: #ffffff;
-    --row-hover: var(--row-hover);
-    --row-picked: var(--row-picked);
-    --header: var(--header);
-    --group: var(--group);
+    --row-hover: #f6faff;
+    --row-picked: #eaf3fe;
+    --header: #f7f9fc;
+    --group: #e9eef6;
     --field: #ffffff;
-    --total: var(--total);
+    --total: #1c4f9c;
+
+    /* кнопки — синий оттенок */
+    --btn-bg: #e8f0fd;
+    --btn-bg-hover: #d5e4fa;
+    --btn-border: #a6c2ec;
+    --btn-text: #17427f;
+    --btn-shadow: rgba(28, 79, 156, .16);
 }
 
 body.dark {
+    /* тёмная тема */
     --bg: #191d24;
     --panel: #232833;
     --border: #454e5e;
@@ -39,6 +48,13 @@ body.dark {
     --group: #2d3542;
     --field: #1e232c;
     --total: #8fbaff;
+
+    /* кнопки — приглушённый синий */
+    --btn-bg: #223a5e;
+    --btn-bg-hover: #2c4a79;
+    --btn-border: #3d6099;
+    --btn-text: #d3e4ff;
+    --btn-shadow: rgba(0, 0, 0, .35);
 }
 
 * { box-sizing: border-box; }
@@ -100,21 +116,38 @@ header.top .hint { color: var(--muted); font-size: 13px; }
     background: var(--panel);
 }
 
+/* Кнопки — синий оттенок: мягкая заливка для обычных действий,
+   насыщенная синяя для главного действия страницы. */
 button {
     padding: 8px 13px;
-    border: 1px solid var(--border);
-    box-shadow: 0 1px 1px rgba(20, 30, 50, .06);
+    border: 1px solid var(--btn-border);
     border-radius: 8px;
-    background: var(--panel);
-    color: var(--text);
+    background: var(--btn-bg);
+    color: var(--btn-text);
     font: inherit;
     cursor: pointer;
+    box-shadow: 0 1px 2px var(--btn-shadow);
+    transition: background-color .12s ease, border-color .12s ease;
 }
 
-button:hover { background: var(--row-hover); }
-button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
-button.primary:hover { filter: brightness(0.94); }
-button.danger { color: #c0392b; }
+button:hover:not(:disabled) { background: var(--btn-bg-hover); border-color: var(--accent); }
+button:active:not(:disabled) { background: var(--btn-bg); }
+button:disabled { box-shadow: none; opacity: .55; }
+
+button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
+    font-weight: 600;
+    box-shadow: 0 2px 5px var(--btn-shadow);
+}
+button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+
+button.danger { color: #a5342a; border-color: #e2b3ad; background: #fdeceb; }
+button.danger:hover:not(:disabled) { background: #fbdcd9; border-color: #c0392b; }
+body.dark button.danger { color: #ffb4a8; border-color: #6b3a34; background: #3a2422; }
+body.dark button.danger:hover:not(:disabled) { background: #4a2c29; border-color: #c0392b; }
+
 button.mini { padding: 2px 8px; font-size: 13px; }
 
 .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
@@ -247,15 +280,17 @@ button:focus-visible, .file-button:focus-visible { outline: 2px solid var(--acce
 .spacer { flex: 1 1 auto; }
 .file-button {
     padding: 8px 13px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--btn-border);
     box-shadow: 0 1px 1px rgba(20, 30, 50, .06);
     border-radius: 8px;
-    background: var(--panel);
-    color: var(--text);
+    background: var(--btn-bg);
+    color: var(--btn-text);
     font: inherit;
     cursor: pointer;
+    box-shadow: 0 1px 2px var(--btn-shadow);
+    transition: background-color .12s ease, border-color .12s ease;
 }
-.file-button:hover { background: var(--row-hover); }
+.file-button:hover { background: var(--btn-bg-hover); border-color: var(--accent); }
 
 /* ------------------------------------------------------- смета */
 
