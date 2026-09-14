@@ -21,6 +21,8 @@ var state = {
 };
 
 var STORAGE_KEY = 'raschet-smeta-v2';
+var pendingBackup = null;   // копия прайса, снятого кнопкой очистки
+var CLEAR_WORD = '\u041f\u041e\u041b\u041d\u041e\u0421\u0422\u042c\u042e';   // слово подтверждения очистки
 var EXCHANGE_FORMAT = 'raschet-smeta';
 // --------------------------------------------------------------- утилиты
 
@@ -970,6 +972,74 @@ function downloadBlob(name, blob) {
     setTimeout(function () { URL.revokeObjectURL(link.href); }, 2000);
 }
 
+/** Очистка всего прайс-листа: нужно ввести слово ПОЛНОСТЬЮ. */
+function clearPrices(givenAnswer) {
+    if (!state.items.length) {
+        setStatus('Прайс-лист и так пуст.');
+        return false;
+    }
+
+    var total = state.items.length;
+    var answer = (typeof givenAnswer === 'string')
+        ? givenAnswer
+        : window.prompt(
+            'Будут удалены все позиции прайс-листа: ' + total + '.\n' +
+            'Отметки в смете при этом сбрасываются.\n\n' +
+            'Для подтверждения введите слово ПОЛНОСТЬЮ:');
+
+    if (answer === null) { setStatus('Очистка отменена.'); return false; }
+    if (answer.trim().toUpperCase() !== CLEAR_WORD) {
+        setStatus('Очистка отменена: слово подтверждения введено неверно.');
+        return false;
+    }
+
+    // резервная копия на случай ошибки
+    var backup = JSON.stringify(state.items);
+
+    state.items = [];
+    state.chosen = {};
+    save();
+    renderEditor();
+    render();
+
+    setStatus('Прайс-лист очищен: удалено позиций — ' + total +
+              '. Копия сохранена, её можно вернуть кнопкой «Отменить очистку».');
+
+    pendingBackup = backup;
+    var undo = document.getElementById('undoClear');
+    if (undo) undo.style.display = '';
+    return true;
+}
+
+/** Возврат прайс-листа, снятого кнопкой очистки. */
+function undoClear() {
+    if (!pendingBackup) {
+        setStatus('Возвращать нечего.');
+        return false;
+    }
+
+    var restored = null;
+    try { restored = JSON.parse(pendingBackup); } catch (e) { restored = null; }
+
+    if (!restored || !restored.length) {
+        setStatus('Копия прайс-листа повреждена.');
+        return false;
+    }
+
+    state.items = restored;
+    state.chosen = {};
+    pendingBackup = null;
+
+    save();
+    renderEditor();
+    render();
+
+    var undo = document.getElementById('undoClear');
+    if (undo) undo.style.display = 'none';
+
+    setStatus('Прайс-лист восстановлен: позиций — ' + state.items.length);
+    return true;
+}
 function exportCsv() {
     var lines = ['# Прайс-лист программы «Расчет сметы»', '# Разделитель колонок — знак табуляции',
                  '# Группа\tАртикул\tНаименование\tЕд. изм.\tЦена'];
@@ -1202,6 +1272,9 @@ function bind() {
         event.target.value = '';
     });
 
+    document.getElementById('clearPrices').addEventListener('click', function () { clearPrices(); });
+    document.getElementById('undoClear').addEventListener('click', function () { undoClear(); });
+
     document.getElementById('resetPrices').addEventListener('click', function () {
         if (!confirm('Вернуть заводской прайс-лист? Ваши изменения будут потеряны.')) return;
         seedFromFactory();
@@ -1362,6 +1435,9 @@ window.WebEstimate = {
     showTab: showTab,
     showPreview: showPreview,
     toggleTheme: toggleTheme,
+    clearPrices: clearPrices,
+    undoClear: undoClear,
+    clearWord: CLEAR_WORD,
     storageKey: STORAGE_KEY,
     exchangeFormat: EXCHANGE_FORMAT
 };

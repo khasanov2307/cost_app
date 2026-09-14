@@ -76,6 +76,8 @@ namespace KotovCalc
         /// <summary>
         /// Загрузка прайс-листа: из хранилища, а при первом запуске — заводской набор
         /// (с переносом ранее сохранённого файла TSV, если он найден).
+        /// Пустой прайс-лист — законное состояние: его вернули очисткой, и
+        /// подменять его заводским набором нельзя.
         /// </summary>
         public static List<ServiceItem> Load(out string error)
         {
@@ -89,9 +91,8 @@ namespace KotovCalc
             {
                 try
                 {
-                    List<ServiceItem> stored = ReadStore(StorePath);
-                    if (stored.Count > 0) return stored;
-                    error = "Хранилище цен пусто — загружен заводской набор.";
+                    // файл есть — значит прайс-лист уже заведён, даже если он пуст
+                    return ReadStore(StorePath);
                 }
                 catch (Exception ex)
                 {

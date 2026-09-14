@@ -444,6 +444,62 @@ internal static class Harness2
         find.Text = "";
         Check("отметки сохранились", 3600m, SumSelected(main));
 
+        // ------------------------------------------------ очистка прайс-листа
+        Console.WriteLine();
+        Console.WriteLine("[12] Очистка прайс-листа");
+
+        PriceEditorForm wiper = new PriceEditorForm();
+        wiper.Show();
+        wiper.PendingClearAnswer = "почти";
+        Invoke(wiper, "ClearAllRows");
+        Check("неверное слово не очищает", true, Rows(wiper).Count > 0);
+
+        wiper.PendingClearAnswer = "ПОЛНОСТЬЮ";
+        Invoke(wiper, "ClearAllRows");
+        Check("прайс-лист очищен", 0, Rows(wiper).Count);
+        Check("строк в таблице нет", 0, Grid(wiper).Rows.Count);
+
+        // проверяем строку состояния: она должна объяснить, что делать дальше
+        ToolStripStatusLabel clearStatus = Get<ToolStripStatusLabel>(wiper, "_statusText");
+        Check("подсказка сохранения после очистки", true,
+              clearStatus.Text.Contains("Сохранить"));
+
+        // очистка ещё не записана — в хранилище цены на месте
+        string clearError;
+        Check("до сохранения хранилище не тронуто", true, PriceBook.Load(out clearError).Count > 0);
+
+        wiper.Dispose();
+
+        // сохранение пустого прайс-листа: пишем в хранилище напрямую тем же способом, что и редактор
+        PriceBook.Save(new List<ServiceItem>());
+        Check("пустой прайс-лист записан", 0, PriceBook.Load(out clearError).Count);
+
+        main.ReloadPricesPreserving();
+        Check("в главном окне нет позиций", 0, Get<List<EstimateRow>>(main, "_rows").Count);
+        Check("итог после очистки нулевой", Total(main).Text.StartsWith("ИТОГО: 0,00"), true);
+
+        // редактор должен открываться и на пустом прайс-листе
+        PriceEditorForm emptyEditor = new PriceEditorForm();
+        emptyEditor.Show();
+        Check("редактор открылся на пустом прайсе", 0, Rows(emptyEditor).Count);
+        emptyEditor.PendingSectionAnswer = "Новый раздел";
+        Invoke(emptyEditor, "AddSection");
+        Check("раздел добавляется в пустой прайс", 1, Rows(emptyEditor).Count);
+        emptyEditor.Dispose();
+
+        // возвращаем заводской прайс-лист
+        PriceEditorForm restored = new PriceEditorForm();
+        restored.Show();
+        restored.PendingRestoreAnswer = true;
+        Invoke(restored, "RestoreFactoryPrices");
+        Check("заводской прайс вернулся", true, Rows(restored).Count > 30);
+        restored.Dispose();
+
+        Check("заводской прайс записан в хранилище", true, PriceBook.Load(out clearError).Count > 30);
+
+        main.ReloadPricesPreserving();
+        Check("главное окно снова с позициями", true, Get<List<EstimateRow>>(main, "_rows").Count > 30);
+
         main.Dispose();
         editor.Dispose();
         if (File.Exists(cfg)) File.Delete(cfg);
@@ -459,6 +515,13 @@ internal static class Harness2
     }
 
     /// <summary>Щелчок по знаку «–/+»: вызывается тот же обработчик, что и в программе.</summary>
+    private static object Invoke(PriceEditorForm editor, string method, params object[] arguments)
+    {
+        MethodInfo info = typeof(PriceEditorForm).GetMethod(method, Hidden);
+        if (info == null) throw new InvalidOperationException("Метод не найден: " + method);
+        return info.Invoke(editor, arguments);
+    }
+
     private static void ToggleClick(PriceEditorForm editor, DataGridView grid, int row, int column)
     {
         MethodInfo info = typeof(PriceEditorForm).GetMethod("Grid_CellClick", Hidden);

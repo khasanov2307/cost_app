@@ -94,6 +94,7 @@ namespace KotovCalc
         private const int ColName = 3;      // наименование услуги
         private const int ColUnit = 4;      // единица измерения (выбор из перечня)
         private const int ColPrice = 5;     // цена
+        private const string ClearWord = "ПОЛНОСТЬЮ";   // слово подтверждения очистки
 
         private Font _baseFont;
         private Font _boldFont;
@@ -135,6 +136,12 @@ namespace KotovCalc
         /// <summary>Готовое название нового раздела (для автотестов).</summary>
         public string PendingSectionAnswer;
 
+        /// <summary>Готовый ответ для подтверждения очистки (для автотестов).</summary>
+        public string PendingClearAnswer;
+
+        /// <summary>Ответ на вопрос о заводском прайсе (для автотестов).</summary>
+        public bool? PendingRestoreAnswer;
+
         // ------------------------------------------------------- интерфейс
 
         private void BuildInterface()
@@ -151,7 +158,7 @@ namespace KotovCalc
             // ---------- нижняя панель ----------
             Panel bottom = new Panel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 108;
+            bottom.Height = 112;
             bottom.Paint += delegate(object s, PaintEventArgs e)
             {
                 using (Pen pen = new Pen(Splitter))
@@ -168,12 +175,23 @@ namespace KotovCalc
             Label hint = new Label();
             hint.AutoSize = false;
             hint.ForeColor = Color.FromArgb(110, 118, 130);
-            hint.Location = new Point(16, 34);
-            hint.Size = new Size(230, 66);
+            hint.Location = new Point(16, 26);
+            hint.Size = new Size(430, 20);
             hint.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-            hint.Text = "Раздел переименовывается целиком," + Environment.NewLine +
-                        "услуги правятся в таблице.";
+            hint.Text = "Раздел переименовывается целиком — услуги правятся в таблице.";
             bottom.Controls.Add(hint);
+
+            // Слева — действия со всем прайс-листом целиком.
+            Button btnClear = MakeButton("Очистить прайс", 160);
+            btnClear.Location = new Point(14, 62);
+            btnClear.ForeColor = Color.FromArgb(160, 40, 40);
+            btnClear.Click += delegate { ClearAllRows(); };
+            bottom.Controls.Add(btnClear);
+
+            Button btnFactory = MakeButton("Вернуть заводской", 190);
+            btnFactory.Location = new Point(182, 62);
+            btnFactory.Click += delegate { RestoreFactoryPrices(); };
+            bottom.Controls.Add(btnFactory);
 
             _btnSave = MakeButton("Сохранить", 118);
             _btnSave.Font = _boldFont;
@@ -430,6 +448,170 @@ namespace KotovCalc
             catch { /* не критично */ }
         }
         // ---------------------------------------------- загрузка и запись
+
+        // ------------------------------------- очистка и возврат завода
+
+        /// <summary>Удаление всех позиций прайс-листа с подтверждением.</summary>
+        private void ClearAllRows()
+        {
+            if (_grid.IsCurrentCellInEditMode) _grid.EndEdit();
+
+            int total = _rows.Count;
+            if (total == 0)
+            {
+                SetStatus("Прайс-лист и так пуст.");
+                return;
+            }
+
+            string answer;
+            if (!ConfirmClear(total, out answer))
+            {
+                SetStatus(answer == null
+                    ? "Очистка отменена."
+                    : "Очистка отменена: слово подтверждения введено неверно.");
+                return;
+            }
+
+            _rows.Clear();
+            _newRows.Clear();
+            _newSections.Clear();
+
+            RefreshGrid();
+            SetInfo();
+            MarkDirty(true);
+
+            SetStatus("Прайс-лист очищен: удалено позиций — " + total +
+                      ". Нажмите «Сохранить», чтобы записать пустой прайс-лист.");
+        }
+
+        /// <summary>Возврат заводского прайс-листа с подтверждением.</summary>
+        private void RestoreFactoryPrices()
+        {
+            int total = _rows.Count;
+
+            bool confirmed;
+            if (PendingRestoreAnswer.HasValue)
+            {
+                confirmed = PendingRestoreAnswer.Value;
+                PendingRestoreAnswer = null;
+            }
+            else
+            {
+                confirmed = MessageBox.Show(this,
+                    total == 0
+                        ? "Загрузить заводской прайс-лист?"
+                        : "Заменить текущий прайс-лист (" + total + " позиций) заводским?",
+                    "Заводской прайс-лист", MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
+                    != DialogResult.Cancel;
+            }
+
+            if (confirmed)
+            {
+                // восстанавливаем заводской набор: PriceBook сразу записывает его в хранилище
+                List<ServiceItem> items = PriceBook.RestoreDefaults();
+
+                if (items == null || items.Count == 0)
+                {
+                    MessageBox.Show(this, "Заводской прайс-лист пуст.",
+                        "Заводской прайс-лист", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                _rows.Clear();
+                foreach (ServiceItem item in items)
+                    _rows.Add(new PriceRow(item.Group, item.Article, item.Name, item.Unit, item.Price));
+
+                _newRows.Clear();
+                _newSections.Clear();
+
+                RefreshGrid();
+                SetInfo();
+                MarkDirty(true);
+
+                SetStatus("Заводской прайс-лист восстановлен и записан: позиций — " + items.Count + ".");
+            }
+        }
+
+        /// <summary>
+        /// Подтверждение очистки: нужно ввести слово ПОЛНОСТЬЮ.
+        /// Для автотестов ответ можно задать заранее.
+        /// </summary>
+        private bool ConfirmClear(int total, out string answer)
+        {
+            if (PendingClearAnswer != null)
+            {
+                answer = PendingClearAnswer;
+                PendingClearAnswer = null;
+                return string.Equals(answer.Trim(), ClearWord, StringComparison.CurrentCultureIgnoreCase);
+            }
+
+            using (Form dialog = new Form())
+            {
+                dialog.Text = "Очистка прайс-листа";
+                dialog.StartPosition = FormStartPosition.CenterParent;
+                dialog.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dialog.MinimizeBox = false;
+                dialog.MaximizeBox = false;
+                dialog.ShowInTaskbar = false;
+                dialog.Font = _baseFont;
+                dialog.ClientSize = new Size(500, 208);
+
+                Label message = new Label();
+                message.AutoSize = false;
+                message.Location = new Point(16, 14);
+                message.Size = new Size(468, 76);
+                message.Text = "Будут удалены все позиции прайс-листа: " + total +
+                               ". Вместе с ними пропадут цены и разделы." + Environment.NewLine +
+                               Environment.NewLine +
+                               "Сначала прайс-лист сохраняется в резервную копию, поэтому " +
+                               "его можно будет вернуть. Но записи в сметах на удалённые " +
+                               "позиции станут пустыми.";
+                dialog.Controls.Add(message);
+
+                Label prompt = new Label();
+                prompt.AutoSize = true;
+                prompt.Location = new Point(16, 98);
+                prompt.Text = "Для подтверждения введите слово " + ClearWord + ":";
+                dialog.Controls.Add(prompt);
+
+                TextBox input = new TextBox();
+                input.Location = new Point(16, 122);
+                input.Width = 468;
+                input.Font = _boldFont;
+                dialog.Controls.Add(input);
+
+                Button ok = MakeButton("Очистить", 140);
+                ok.Location = new Point(200, 160);
+                ok.ForeColor = Color.FromArgb(160, 40, 40);
+                ok.Enabled = false;
+                dialog.Controls.Add(ok);
+
+                Button cancel = MakeButton("Отмена", 110);
+                cancel.Location = new Point(350, 160);
+                cancel.DialogResult = DialogResult.Cancel;
+                dialog.Controls.Add(cancel);
+
+                input.TextChanged += delegate
+                {
+                    ok.Enabled = string.Equals(input.Text.Trim(), ClearWord,
+                                               StringComparison.CurrentCultureIgnoreCase);
+                };
+
+                ok.Click += delegate { dialog.DialogResult = DialogResult.OK; };
+
+                dialog.AcceptButton = ok;
+                dialog.CancelButton = cancel;
+
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    answer = input.Text;
+                    return true;
+                }
+
+                answer = null;
+                return false;
+            }
+        }
 
         private void LoadFromDisk()
         {

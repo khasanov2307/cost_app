@@ -264,7 +264,28 @@ try {
     CheckTrue 'sheet has number' ((Eval 'document.querySelector("#sheet").textContent').Contains('12/2026')) 'no number'
     [void](Eval 'WebEstimate.state.document.discount = 0; WebEstimate.save(); WebEstimate.render()')
     Write-Host ''
-    Write-Host '[16] screenshots'
+    Write-Host ''
+    Write-Host '[16] clearing the whole price list'
+    Write-Host ('        тип функции: ' + (Eval 'typeof WebEstimate.clearPrices'))
+    [void](Eval 'WebEstimate.showTab("price")')
+    CheckTrue 'wrong word does not clear' ((Eval 'WebEstimate.clearPrices(String.fromCharCode(1091,1076,1072,1083,1080,1090,1100))') -eq $false) 'cleared anyway'
+    Check 'price list untouched' 37 (Eval 'WebEstimate.state.items.length')
+    CheckTrue 'right word clears' ((Eval 'WebEstimate.clearPrices(WebEstimate.clearWord)') -eq $true) 'not cleared'
+    Check 'price list is empty' 0 (Eval 'WebEstimate.state.items.length')
+    Check 'marks are cleared too' 0 (Eval 'WebEstimate.chosenRows().length')
+    CheckTrue 'undo button is shown' ((Eval 'document.getElementById("undoClear").style.display') -ne 'none') 'button hidden'
+    CheckTrue 'empty list is saved' ((Eval 'String(localStorage.getItem(WebEstimate.storageKey)).indexOf(String.fromCharCode(34) + "items" + String.fromCharCode(34) + ":[]") > 0') -eq $true) 'not saved'
+    CheckTrue 'clearing again reports empty' ((Eval 'WebEstimate.clearPrices(WebEstimate.clearWord)') -eq $false) 'cleared twice'
+
+    Write-Host ''
+    Write-Host '[17] undoing the clear'
+    CheckTrue 'undo restores prices' ((Eval 'WebEstimate.undoClear()') -eq $true) 'not restored'
+    Check 'prices are back' 37 (Eval 'WebEstimate.state.items.length')
+    CheckTrue 'undo button hidden again' ((Eval 'document.getElementById("undoClear").style.display') -eq 'none') 'still visible'
+    Check 'undo once only' $false (Eval 'WebEstimate.undoClear()')
+    [void](Eval 'WebEstimate.showTab("calc"); WebEstimate.render()')
+
+    Write-Host '[18] screenshots'
     # светлая тема: страница расчёта без открытого окна сметы
     [void](Eval 'document.getElementById("overlay").classList.remove("open"); WebEstimate.state.theme = "light"; WebEstimate.save(); WebEstimate.showTab("calc"); WebEstimate.render()')
     Start-Sleep -Milliseconds 400
