@@ -1,0 +1,17 @@
+# Окончания строк: в репозитории — LF, при выгрузке на Windows — CRLF.
+# Для скриптов PowerShell и прайс-листа преобразование отключено:
+# эти файлы должны переноситься байт в байт (BOM и табуляции).
+* text=auto
+
+*.ps1 text eol=crlf
+*.tsv -text
+*.cs text
+*.md text
+*.html text
+*.js text
+*.txt text
+
+*.exe binary
+*.png binary
+*.docx binary
+
