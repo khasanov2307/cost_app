@@ -21,6 +21,7 @@ namespace KotovCalc
         public string Customer = "";            // ФИО заказчика
         public decimal Discount = 0m;           // скидка на всю смету, %
         public string LastTemplate = "";
+        public string Logo = "";                // путь к файлу логотипа компании
 
         private const string FileName = "settings.ini";
 
@@ -57,6 +58,7 @@ namespace KotovCalc
                                 settings.Discount = ClampDiscount(discount);
                             break;
                         case "template": settings.LastTemplate = value; break;
+                        case "logo": settings.Logo = value; break;
                     }
                 }
             }
@@ -76,6 +78,7 @@ namespace KotovCalc
                 sb.AppendLine("customer=" + Clean(Customer));
                 sb.AppendLine("discount=" + Discount.ToString("0.##", CultureInfo.InvariantCulture));
                 sb.AppendLine("template=" + Clean(LastTemplate));
+                sb.AppendLine("logo=" + Clean(Logo));
 
                 File.WriteAllText(Path, sb.ToString(), new UTF8Encoding(true));
             }

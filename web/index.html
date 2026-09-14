@@ -314,6 +314,10 @@ button:focus-visible, .file-button:focus-visible { outline: 2px solid var(--acce
     border-radius: 10px;
 }
 
+.sheet .logo { display: block; max-height: 84px; max-width: 260px; margin: 0 0 12px; object-fit: contain; }
+.sheet .head { display: flex; align-items: center; gap: 18px; margin-bottom: 10px; }
+.sheet .head .head-text { flex: 1; }
+.sheet .head h1 { margin: 0; }
 .sheet h1 { margin: 0 0 6px; text-align: center; font-size: 23px; letter-spacing: 1px; }
 .sheet .meta { margin: 0 0 16px; text-align: center; color: var(--muted); font-size: 13px; }
 
@@ -364,6 +368,12 @@ table.sign td { padding-top: 22px; color: var(--text); }
             <input type="search" id="search" placeholder="Поиск по наименованию, артикулу или разделу">
             <button type="button" id="markAll">Отметить всё</button>
             <button type="button" id="clearMarks">Снять отметки</button>
+        <button type="button" id="toggleAll">Свернуть всё</button>
+        <label class="file-button">
+            Логотип компании
+            <input type="file" id="logoFile" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none">
+        </label>
+        <button type="button" id="logoRemove" style="display:none">Убрать логотип</button>
             <span class="spacer"></span>
             <button type="button" id="themeButton">Тёмная тема</button>
             <button type="button" id="exportData">Выгрузить данные</button>

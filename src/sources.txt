@@ -3,6 +3,7 @@ SimpleJson.cs
 AppSettings.cs
 DataExchange.cs
 DocumentBuilder.cs
+CompanyLogo.cs
 PriceBook.cs
 EstimateDocx.cs
 MainFormFeatures.cs

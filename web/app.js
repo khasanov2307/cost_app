@@ -15,6 +15,7 @@ var state = {
         customer: '',
         discount: 0
     },
+    logo: null,         // логотип компании: { data: 'data:image/png;base64,...', name: 'logo.png' }
     theme: 'light',
     query: '',
     collapsing: {}      // свёрнутые разделы
@@ -186,7 +187,7 @@ function render() {
     var host = document.getElementById('list');
     var html = '';
     var shownItems = 0;
-
+    var shownGroups = 0;
     for (var g = 0; g < visibleGroups.length; g++) {
         var group = visibleGroups[g];
         var inGroup = [];
@@ -196,6 +197,7 @@ function render() {
             inGroup.push(state.items[i]);
         }
         if (inGroup.length === 0) continue;
+        shownGroups++;
 
         var collapsed = !!state.collapsing[group];
         var groupSum = groupTotal(group);
@@ -241,7 +243,7 @@ function render() {
         html += '</tbody></table>';
     }
 
-    if (shownItems === 0) {
+    if (shownGroups === 0) {
         html = '<p class="empty">Ничего не найдено. Измените строку поиска.</p>';
     }
 
@@ -373,9 +375,14 @@ function buildEstimateHtml() {
     var rows = chosenRows();
     var summary = totals();
 
-    var html = '<h1>СМЕТА</h1>' +
+    var logo = state.logo && state.logo.data
+        ? '<img class="logo" src="' + escapeHtml(state.logo.data) + '" alt="Логотип компании">'
+        : '';
+
+    var html = '<div class="head">' + logo + '<div class="head-text">' +
+        '<h1>СМЕТА</h1>' +
         '<p class="meta">' + escapeHtml(documentSubtitle()) +
-        '   \u2022   позиций: ' + rows.length + '</p>' +
+        '   \u2022   позиций: ' + rows.length + '</p></div></div>' +
         '<table class="items estimate"><thead><tr>' +
         '<th class="num">#</th><th class="article">Артикул</th><th class="name">Наименование</th>' +
         '<th class="unit">Ед. изм.</th><th class="qty">Кол-во</th><th class="price">Цена</th>' +
@@ -448,14 +455,42 @@ function xmlEscape(text) {
     return escapeHtml(text);
 }
 
+/** Разметка логотипа в документе Word. */
+function logoParagraph(logo) {
+    if (!logo) return '';
+
+    var cx = Math.round(logo.width * 9525);      // точки в английские пункты (EMU)
+    var cy = Math.round(logo.height * 9525);
+    var id = 'Logo1';
+
+    return '<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:after="120"/></w:pPr><w:r><w:drawing>' +
+        '<wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">' +
+        '<wp:extent cx="' + cx + '" cy="' + cy + '"/>' +
+        '<wp:docPr id="1" name="Логотип компании"/>' +
+        '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' +
+        '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+        '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+        '<pic:nvPicPr><pic:cNvPr id="1" name="Логотип"/><pic:cNvPicPr/></pic:nvPicPr>' +
+        '<pic:blipFill><a:blip r:embed="rId2" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>' +
+        '<a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+        '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm>' +
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>' +
+        '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+}
+
 function buildDocxParts() {
     var rows = chosenRows();
+    var logo = logoForDocx();
+
     var summary = totals();
 
     var contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
         '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
         '<Default Extension="xml" ContentType="application/xml"/>' +
+        '<Default Extension="png" ContentType="image/png"/>' +
+        '<Default Extension="jpeg" ContentType="image/jpeg"/>' +
+        '<Default Extension="gif" ContentType="image/gif"/>' +
         '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
         '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
         '</Types>';
@@ -468,8 +503,8 @@ function buildDocxParts() {
     var documentRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
         '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+        (logo ? '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.' + logo.extension + '"/>' : '') +
         '</Relationships>';
-
     var font = '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>';
     var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
@@ -568,6 +603,7 @@ function buildDocxParts() {
 
     var document = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+        (logo ? logoParagraph(logo) : '') +
         paragraph('СМЕТА', 'Title', 'center') +
         paragraph(documentSubtitle(), 'Subtitle', 'center') +
         table + foot + paragraph('', 'Normal', null) + sign + section +
@@ -578,8 +614,17 @@ function buildDocxParts() {
         { name: '_rels/.rels', text: rootRels },
         { name: 'word/document.xml', text: document },
         { name: 'word/styles.xml', text: styles },
-        { name: 'word/_rels/document.xml.rels', text: documentRels }
+        { name: 'word/_rels/document.xml.rels', text: documentRels },
+        { name: 'word/media/logo.' + (logo ? logo.extension : 'png'), base64: logo ? logo.base64 : null }
     ];
+}
+
+/** Двоичные данные из строки base64. */
+function base64Bytes(text) {
+    var binary = atob(text);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
 }
 
 function zipStore(parts) {
@@ -595,7 +640,7 @@ function zipStore(parts) {
 
     for (var i = 0; i < parts.length; i++) {
         var name = utf8(parts[i].name);
-        var data = utf8(parts[i].text);
+        var data = parts[i].base64 ? base64Bytes(parts[i].base64) : utf8(parts[i].text);
         var crc = crc32(data);
 
         var local = [number(0x04034b50, 4), number(20, 2), number(0, 2), number(0, 2),
@@ -647,6 +692,7 @@ function save() {
             chosen: state.chosen,
             templates: state.templates,
             document: state.document,
+            logo: state.logo,
             theme: state.theme,
             collapsing: state.collapsing
         }));
@@ -672,6 +718,7 @@ function load() {
         state.theme = saved.theme === 'dark' ? 'dark' : 'light';
 
         state.document = saved.document || { number: '', customer: '', discount: 0 };
+        state.logo = saved.logo || null;
         state.document.discount = clampDiscount(state.document.discount);
 
         setStatus('Загружен прайс-лист из памяти браузера: ' + state.items.length + ' позиций');
@@ -730,6 +777,7 @@ function buildExchange() {
         format: EXCHANGE_FORMAT,
         version: 1,
         saved: new Date().toISOString(),
+        logo: state.logo || null,
         settings: {
             theme: state.theme,
             number: state.document.number,
@@ -767,6 +815,12 @@ function applyExchange(data) {
     if (data.templates && data.templates.length) {
         state.templates = data.templates;
         applied.templates = state.templates.length;
+    }
+
+    if (data.logo && data.logo.data) {
+        state.logo = { data: data.logo.data, name: data.logo.name || 'logo' };
+    } else if (data.logo === null) {
+        state.logo = null;
     }
 
     if (data.settings) {
@@ -935,7 +989,132 @@ function deleteTemplate() {
 }
 
 // ----------------------------------------------------- оформление и файлы
+// ------------------------------------------------------- логотип компании
 
+var LOGO_LIMIT = 900 * 1024;        // ограничение на размер файла
+
+/** Загрузка логотипа из выбранного файла. */
+function setLogoFile(file) {
+    if (!file) return false;
+
+    if (file.size > LOGO_LIMIT) {
+        setStatus('Файл логотипа больше 900 КБ — выберите изображение поменьше.');
+        return false;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function () {
+        state.logo = { data: String(reader.result), name: file.name };
+        save();
+        refreshLogoControls();
+        setStatus('Логотип загружен: ' + file.name);
+    };
+    reader.onerror = function () {
+        setStatus('Не удалось прочитать файл логотипа.');
+    };
+    reader.readAsDataURL(file);
+    return true;
+}
+
+/** Удаление логотипа. */
+function removeLogo() {
+    if (!state.logo) {
+        setStatus('Логотип не задан.');
+        return false;
+    }
+
+    state.logo = null;
+    save();
+    refreshLogoControls();
+    setStatus('Логотип убран.');
+    return true;
+}
+
+/** Кнопка «Убрать логотип» видна только когда логотип задан. */
+function refreshLogoControls() {
+    var button = document.getElementById('logoRemove');
+    if (button) button.style.display = state.logo ? '' : 'none';
+}
+
+/** Размеры картинки по её данным (PNG и JPEG). */
+function imageSize(dataUrl) {
+    var fallback = { width: 240, height: 80 };
+    if (!dataUrl) return fallback;
+
+    var comma = dataUrl.indexOf(',');
+    if (comma < 0) return fallback;
+
+    var binary = atob(dataUrl.substring(comma + 1));
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+    // PNG: размеры лежат в блоке IHDR
+    if (bytes.length > 24 && bytes[0] === 0x89 && bytes[1] === 0x50) {
+        var w = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+        var h = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+        if (w > 0 && h > 0) return { width: w, height: h };
+    }
+
+    // JPEG: ищем маркер начала кадра с размерами
+    if (bytes.length > 4 && bytes[0] === 0xFF && bytes[1] === 0xD8) {
+        var at = 2;
+        while (at + 9 < bytes.length) {
+            if (bytes[at] !== 0xFF) { at++; continue; }
+            var marker = bytes[at + 1];
+            var size = (bytes[at + 2] << 8) | bytes[at + 3];
+            if (marker >= 0xC0 && marker <= 0xCF && marker !== 0xC4 && marker !== 0xC8 && marker !== 0xCC) {
+                var jh = (bytes[at + 5] << 8) | bytes[at + 6];
+                var jw = (bytes[at + 7] << 8) | bytes[at + 8];
+                if (jw > 0 && jh > 0) return { width: jw, height: jh };
+            }
+            at += 2 + size;
+        }
+    }
+
+    return fallback;
+}
+
+/** Размер логотипа в документе: не шире 180 и не выше 64 точек. */
+function logoBox() {
+    var size = imageSize(state.logo ? state.logo.data : null);
+    var width = size.width;
+    var height = size.height;
+
+    if (width > 180) {
+        height = Math.round(height * 180 / width);
+        width = 180;
+    }
+    if (height > 64) {
+        width = Math.round(width * 64 / height);
+        height = 64;
+    }
+
+    return { width: Math.max(1, width), height: Math.max(1, height) };
+}
+
+/** Данные логотипа для вставки в документ Word. */
+function logoForDocx() {
+    if (!state.logo || !state.logo.data) return null;
+
+    var comma = state.logo.data.indexOf(',');
+    if (comma < 0) return null;
+
+    var header = state.logo.data.substring(0, comma);
+    var extension = 'png';
+    if (header.indexOf('image/jpeg') >= 0) extension = 'jpeg';
+    else if (header.indexOf('image/gif') >= 0) extension = 'gif';
+    else if (header.indexOf('image/webp') >= 0) extension = 'webp';
+
+    var box = logoBox();
+    return {
+        base64: state.logo.data.substring(comma + 1),
+        extension: extension,
+        width: box.width,
+        height: box.height
+    };
+}
+
+// ------------------------------------------------------- логотип компании
 function applyTheme() {
     var dark = state.theme === 'dark';
     document.body.className = dark ? 'dark' : 'light';
@@ -1190,6 +1369,45 @@ function markAll(pick) {
     render();
 }
 
+/** Сворачивание и разворачивание всех разделов сразу. */
+function toggleAllGroups() {
+    var groups = orderedGroups();
+    var allCollapsed = groups.length > 0;
+
+    for (var i = 0; i < groups.length; i++) {
+        if (!state.collapsing[groups[i]]) { allCollapsed = false; break; }
+    }
+
+    if (allCollapsed) {
+        state.collapsing = {};
+    } else {
+        state.collapsing = {};
+        for (var k = 0; k < groups.length; k++) state.collapsing[groups[k]] = true;
+    }
+
+    save();
+    render();
+
+    var button = document.getElementById('toggleAll');
+    if (button) button.textContent = allCollapsed ? 'Свернуть всё' : 'Развернуть всё';
+
+    setStatus(allCollapsed
+        ? 'Разделы развёрнуты.'
+        : 'Все разделы свёрнуты: ' + groups.length + '.');
+}
+
+/** Подпись кнопки сворачивания по текущему состоянию. */
+function refreshToggleAllLabel() {
+    var button = document.getElementById('toggleAll');
+    if (!button) return;
+
+    var groups = orderedGroups();
+    var allCollapsed = groups.length > 0;
+    for (var i = 0; i < groups.length; i++) {
+        if (!state.collapsing[groups[i]]) { allCollapsed = false; break; }
+    }
+    button.textContent = allCollapsed ? 'Свернуть всё' : 'Развернуть всё';
+}
 function bind() {
     document.getElementById('list').addEventListener('click', function (event) {
         var head = event.target.closest ? event.target.closest('.group-head') : null;
@@ -1235,6 +1453,13 @@ function bind() {
     document.getElementById('docNumber').addEventListener('input', onDocumentChanged);
     document.getElementById('docCustomer').addEventListener('input', onDocumentChanged);
     document.getElementById('docDiscount').addEventListener('input', onDocumentChanged);
+
+    document.getElementById('toggleAll').addEventListener('click', function () { toggleAllGroups(); });
+    document.getElementById('logoFile').addEventListener('change', function (event) {
+        if (event.target.files && event.target.files[0]) setLogoFile(event.target.files[0]);
+        event.target.value = '';
+    });
+    document.getElementById('logoRemove').addEventListener('click', function () { removeLogo(); });
 
     document.getElementById('markAll').addEventListener('click', function () { markAll(true); });
     document.getElementById('clearMarks').addEventListener('click', function () { markAll(false); });
@@ -1436,6 +1661,13 @@ window.WebEstimate = {
     showPreview: showPreview,
     toggleTheme: toggleTheme,
     clearPrices: clearPrices,
+    toggleAllGroups: toggleAllGroups,
+    setLogoFile: setLogoFile,
+    removeLogo: removeLogo,
+    imageSize: imageSize,
+    logoBox: logoBox,
+    logoForDocx: logoForDocx,
+    refreshLogoControls: refreshLogoControls,
     undoClear: undoClear,
     clearWord: CLEAR_WORD,
     storageKey: STORAGE_KEY,
@@ -1452,6 +1684,7 @@ if (typeof document !== 'undefined' && document.addEventListener) {
         showDocumentFields();
         showTab('calc');
         renderTemplateList();
+        refreshLogoControls();
         render();
     });
 }

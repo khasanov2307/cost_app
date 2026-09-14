@@ -16,6 +16,7 @@ $out  = Join-Path $test 'Harness.exe'
 $out2 = Join-Path $test 'Harness2.exe'
 $out3 = Join-Path $test 'DocxCheck.exe'
 $out4 = Join-Path $test 'Harness3.exe'
+$out5 = Join-Path $test 'Harness4.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
 $csc = @(
@@ -66,6 +67,11 @@ Write-Host '==> Compiling the Word checks' -ForegroundColor Cyan
     (Join-Path $test 'DocxCheck.cs')
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
+Write-Host '==> Compiling the logo checks' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:Harness4 "/out:$out5" $sourceList `
+    (Join-Path $test 'Harness4.cs')
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
+
 Write-Host '==> Compiling the feature checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:Harness3 "/out:$out4" $sourceList `
     (Join-Path $test 'Harness3.cs')
@@ -94,6 +100,11 @@ if ($code -ne 0) { throw "Checks failed with exit code $code" }
 
 Write-Host '==> Running the feature checks' -ForegroundColor Cyan
 & $out4 $storeFile
+$code = $LASTEXITCODE
+if ($code -ne 0) { throw "Checks failed with exit code $code" }
+
+Write-Host '==> Running the logo checks' -ForegroundColor Cyan
+& $out5
 $code = $LASTEXITCODE
 if ($code -ne 0) { throw "Checks failed with exit code $code" }
 
@@ -149,6 +160,14 @@ if ((Test-Path -LiteralPath $yandex) -and (Test-Path -LiteralPath $webChecks)) {
         Write-Host '==> Checking the Word file saved from the browser' -ForegroundColor Cyan
         & powershell -NoProfile -ExecutionPolicy Bypass -File $docxChecks -Page $webPage -OutDir $test
         if ($LASTEXITCODE -ne 0) { throw "Web docx checks failed with exit code $LASTEXITCODE" }
+
+    $logoChecks = Join-Path $test 'web_logo_check.ps1'
+    if (Test-Path -LiteralPath $logoChecks) {
+        Write-Host ''
+        Write-Host '==> Checking the company logo in the browser' -ForegroundColor Cyan
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $logoChecks
+        if ($LASTEXITCODE -ne 0) { throw "Web logo checks failed with exit code $LASTEXITCODE" }
+    }
     }
 } else {
     Write-Host '    Yandex Browser not found - web checks skipped'

@@ -108,7 +108,7 @@ try {
     Write-Host '[1] отмечаем позиции и сохраняем документ'
     [void](Eval 'document.getElementById("markAll").click()')
     CheckTrue 'all items marked' ((Eval 'WebEstimate.chosenRows().length') -eq 36) 'marking failed'
-    CheckTrue 'docx parts built' ((Eval 'WebEstimate.buildDocx().length') -eq 5) 'parts missing'
+    CheckTrue 'docx parts built' ((Eval 'WebEstimate.buildDocx().length') -ge 5) 'parts missing'
 
     $size = Eval 'WebEstimate.zipStore(WebEstimate.buildDocx()).size'
     Write-Host ("        размер архива: " + $size + " байт")

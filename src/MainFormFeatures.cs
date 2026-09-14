@@ -41,6 +41,8 @@ namespace KotovCalc
         private Label _subtotalLabel;
         private Button _btnTheme;
         private Button _btnPreview;
+        private Button _btnLogo;
+        private Image _logoIcon;            // значок логотипа для нижней панели
 
         // цена для этой сметы: колонка добавляется последней
         private DataGridViewTextBoxColumn _colPrice;
@@ -144,6 +146,10 @@ namespace KotovCalc
             _btnTheme.Click += delegate { ToggleTheme(); };
             bottom.Controls.Add(_btnTheme);
 
+            // логотип компании: кнопка выбора и значок подтверждения
+            _btnLogo = MakeButton("Логотип…", 118);
+            _btnLogo.Click += delegate { ChooseLogo(); };
+            bottom.Controls.Add(_btnLogo);
 
             _subtotalLabel = new Label();
             _subtotalLabel.AutoSize = true;
@@ -477,6 +483,111 @@ namespace KotovCalc
         // ------------------------------------------------------ предпросмотр
 
         /// <summary>Окно предпросмотра сметы.</summary>
+        // ---------------------------------------------- логотип компании
+
+        /// <summary>Выбор файла логотипа для печатной формы.</summary>
+        private void ChooseLogo()
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.Title = "Логотип компании для сметы";
+            dialog.Filter = "Изображения (*.png;*.jpg;*.jpeg;*.gif)|*.png;*.jpg;*.jpeg;*.gif|Все файлы (*.*)|*.*";
+            dialog.InitialDirectory = PriceBook.StoreFolder;
+
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            Logo logo = Logo.Read(dialog.FileName);
+            if (logo == null)
+            {
+                MessageBox.Show(this,
+                    "Не удалось прочитать изображение.\n\n" +
+                    "Подойдут файлы PNG, JPEG или GIF.",
+                    "Логотип компании", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            _settings.Logo = dialog.FileName;
+            _settings.Save();
+            ShowLogo();
+
+            SetStatus("Логотип компании: " + Path.GetFileName(dialog.FileName) +
+                      " (" + logo.Width + "×" + logo.Height + " в документе)");
+        }
+
+        /// <summary>Показ значка логотипа и подписи кнопки.</summary>
+        private void ShowLogo()
+        {
+            bool hasLogo = !string.IsNullOrEmpty(_settings.Logo);
+            _btnLogo.Text = hasLogo ? "Сменить логотип" : "Логотип…";
+            _btnLogo.Width = hasLogo ? 168 : 118;
+
+            if (_logoIcon != null)
+            {
+                Image old = _logoIcon;
+                _logoIcon = null;
+                old.Dispose();
+            }
+
+            if (hasLogo)
+            {
+                try
+                {
+                    // читаем через поток, чтобы файл не оставался занятым
+                    using (FileStream stream = new FileStream(_settings.Logo, FileMode.Open, FileAccess.Read))
+                    {
+                        _logoIcon = LogoIconFrom(stream);
+                    }
+                }
+                catch
+                {
+                    _settings.Logo = "";
+                    _settings.Save();
+                    SetStatus("Файл логотипа не найден — логотип отключён.");
+                }
+            }
+
+            if (_btnLogo.Parent != null) _btnLogo.Parent.Invalidate();
+        }
+
+        /// <summary>Значок для нижней панели: уменьшенная копия логотипа.</summary>
+        private static Image LogoIconFrom(Stream stream)
+        {
+            using (Image source = Image.FromStream(stream))
+            {
+                int width = 40;
+                int height = Math.Max(1, (int)Math.Round(source.Height * (double)width / source.Width));
+                if (height > 26)
+                {
+                    height = 26;
+                    width = Math.Max(1, (int)Math.Round(source.Width * (double)height / source.Height));
+                }
+
+                Bitmap small = new Bitmap(width, height);
+                using (Graphics graphics = Graphics.FromImage(small))
+                {
+                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    graphics.DrawImage(source, 0, 0, width, height);
+                }
+                return small;
+            }
+        }
+
+        /// <summary>Рисование значка логотипа на нижней панели.</summary>
+        private void PaintLogoIcon(object sender, PaintEventArgs e)
+        {
+            if (_logoIcon == null) return;
+
+            Panel panel = sender as Panel;
+            if (panel == null) return;
+
+            int x = 14;                                          // слева, под подписями
+            int y = 72;
+
+            e.Graphics.DrawImage(_logoIcon, x, y);
+            using (Pen pen = new Pen(Color.FromArgb(190, 198, 210)))
+                e.Graphics.DrawRectangle(pen, x, y, _logoIcon.Width - 1, _logoIcon.Height - 1);
+        }
+
+
         private void ShowPreview()
         {
             if (CountPicked() == 0)
@@ -655,6 +766,7 @@ namespace KotovCalc
                     ApplyThemeColors();
                     RestyleRows();
                     RestoreFormState();
+            ShowLogo();
                 }
 
                 FillTemplateList("");

@@ -106,7 +106,7 @@ namespace KotovCalc
             // --- нижняя панель с итогом и кнопками (докbуем первой) ---
             Panel bottom = new Panel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 126;
+            bottom.Height = 100;
             bottom.Paint += delegate(object s, PaintEventArgs e)
             {
                 using (Pen pen = new Pen(Splitter))
@@ -202,24 +202,27 @@ namespace KotovCalc
 
             // Кнопки прижимаем к правому краю без переноса:
             // слева остаётся место для итога, счётчика позиций и подытога со скидкой.
-            Button btnPreview = MakeButton("Предпросмотр", 150);
-            btnPreview.Click += delegate { ShowPreview(); };
-            bottom.Controls.Add(btnPreview);
-
+            _btnPreview = MakeButton("Предпросмотр", 150);
+            _btnPreview.Click += delegate { ShowPreview(); };
+            bottom.Controls.Add(_btnPreview);
             // кнопки уже добавлены в нижнюю панель при её создании,
             // поэтому здесь только расставляем их по правому краю
-            Button[] actionButtons = new Button[] { btnPreview, btnCopy, btnReset };
+            Button[] actionButtons = new Button[] { _btnPreview, btnCopy, btnReset, _btnLogo };
 
             EventHandler placeActions = delegate
             {
                 int right = bottom.ClientSize.Width - 14;
                 _btnGenerate.Location = new Point(right - _btnGenerate.Width, 44);
                 right -= _btnGenerate.Width + 8;
-                btnPreview.Location = new Point(right - btnPreview.Width, 44);
-                right -= btnPreview.Width + 8;
+                _btnPreview.Location = new Point(right - _btnPreview.Width, 44);
+                right -= _btnPreview.Width + 8;
                 btnCopy.Location = new Point(right - btnCopy.Width, 44);
                 right -= btnCopy.Width + 8;
                 btnReset.Location = new Point(right - btnReset.Width, 44);
+                right -= btnReset.Width + 8;
+                _btnLogo.Location = new Point(right - _btnLogo.Width, 44);
+
+                LayoutBottomLabels();
 
                 LayoutBottomLabels();
             };
@@ -1073,7 +1076,7 @@ namespace KotovCalc
                     if (!Path.GetExtension(dialog.FileName).Equals(".docx", StringComparison.OrdinalIgnoreCase))
                         dialog.FileName = dialog.FileName + ".docx";
 
-                    EstimateDocx.Save(dialog.FileName, BuildEstimateDocument());
+                    EstimateDocx.Save(dialog.FileName, BuildEstimateDocument(), _settings.Logo);
                 }
                 else
                 {

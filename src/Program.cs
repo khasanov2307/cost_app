@@ -70,7 +70,7 @@ namespace KotovCalc
                 fields.Discount = settings.Discount;
 
                 EstimateDocument document = DocumentBuilder.Build(rows, fields, "", DateTime.Now);
-                EstimateDocx.Save(path, document);
+                EstimateDocx.Save(path, document, settings.Logo);
 
                 Console.WriteLine("Смета сохранена: " + Path.GetFullPath(path) +
                                   "  (" + document.PositionCount + " позиций, " +
