@@ -26,6 +26,7 @@ $outFilter = Join-Path $test 'FilterProbe.exe'
 $outNew = Join-Path $test 'Harness10.exe'
 $outPhone = Join-Path $test 'PhoneProbe.exe'
 $outStock = Join-Path $test 'StockProbe.exe'
+$outDrop = Join-Path $test 'CustomerDropProbe.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
 $csc = @(
@@ -82,6 +83,11 @@ Write-Host '==> Compiling the service host' -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 
+
+Write-Host '==> Compiling the customer search checks' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:CustomerDropProbe "/out:$outDrop" $sourceList `
+    (Join-Path $test 'CustomerDropProbe.cs')
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 Write-Host '==> Compiling the stock column checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:StockProbe "/out:$outStock" $sourceList `
@@ -168,17 +174,22 @@ Write-Host '==> Running the store checks' -ForegroundColor Cyan
 $databaseReady = $false
 try {
     $probe = New-Object System.Net.Sockets.TcpClient
-
+    $probe.Connect('127.0.0.1', 5432)
+    $probe.Close()
+    $databaseReady = $true
+}
+catch {
+    $databaseReady = $false
+}
 Write-Host '==> Running the payment checks' -ForegroundColor Cyan
 if ($databaseReady) {
     & $out8 127.0.0.1 smeta smeta smeta
     $code = $LASTEXITCODE
     if ($code -ne 0) { throw "Payment checks failed with exit code $code" }
-
 }
 else {
     Write-Host '    PostgreSQL is not available - payment checks skipped'
-
+}
 
 Write-Host '==> Running the customer and warehouse checks' -ForegroundColor Cyan
 & $outNew 127.0.0.1 smeta smeta smeta
@@ -203,11 +214,10 @@ if ($LASTEXITCODE -ne 0) { throw "Phone mask checks failed with exit code $LASTE
 Write-Host '==> Checking the stock column and customer choice' -ForegroundColor Cyan
 & $outStock
 if ($LASTEXITCODE -ne 0) { throw "Stock checks failed with exit code $LASTEXITCODE" }
-}
-    $probe.Connect("127.0.0.1", 5432)
-    $probe.Close()
-    $databaseReady = $true
-} catch { $databaseReady = $false }
+
+Write-Host '==> Checking the customer search' -ForegroundColor Cyan
+& $outDrop
+if ($LASTEXITCODE -ne 0) { throw "Customer search checks failed with exit code $LASTEXITCODE" }
 
 if ($databaseReady) {
     & $out6 127.0.0.1 smeta smeta smeta

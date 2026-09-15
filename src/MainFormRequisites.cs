@@ -122,6 +122,25 @@ namespace KotovCalc
         }
 
         /// <summary>Заполнение списка заказчиков для выбора и подсказок.</summary>
+        /// <summary>Поиск по ФИО, телефону, автомобилю или номеру.</summary>
+        private List<Customer> CustomerSearch(string query)
+        {
+            List<Customer> found = new List<Customer>();
+
+            try
+            {
+                found = Customers().Search(query);
+            }
+            catch (Exception ex)
+            {
+                // справочник может быть недоступен: показываем причину, но не падаем
+                SetStatus("Справочник заказчиков недоступен: " + ex.Message);
+            }
+
+            return found;
+        }
+
+
         private void RefreshCustomerList()
         {
             if (_customerPick == null) return;
@@ -133,7 +152,10 @@ namespace KotovCalc
             {
                 _customerPick.Items.Clear();
 
-                foreach (Customer customer in Customers().Search(""))
+                string query = _customerPick.Text.Trim();
+
+                // если введены цифры — ищем по телефону, иначе по имени, машине и номеру
+                foreach (Customer customer in CustomerSearch(query))
                     _customerPick.Items.Add(customer.Caption);
             }
             finally
@@ -148,12 +170,14 @@ namespace KotovCalc
         /// <summary>Оператор выбрал заказчика из списка: заполняем данные.</summary>
         private void CustomerPicked(object sender, EventArgs e)
         {
+            // при перезаполнении списка событие приходит с пустым выбором — пропускаем
+            if (_restoring) return;
             string caption = Convert.ToString(_customerPick.SelectedItem);
             if (caption.Length == 0) return;
 
             Customer customer = null;
 
-            foreach (Customer item in Customers().Customers)
+                foreach (Customer item in CustomerSearch(""))
                 if (item.Caption == caption) { customer = item; break; }
 
             if (customer == null) return;

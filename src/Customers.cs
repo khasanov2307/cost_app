@@ -123,12 +123,40 @@ namespace KotovCalc
                 if (Contains(customer.Name, clean) || Contains(customer.Car, clean) ||
                     Contains(customer.Plate, clean) || Contains(customer.Note, clean) ||
                     Contains(customer.Phone, clean) ||
-                    (digits.Length > 1 && Digits(customer.Phone).IndexOf(digits, StringComparison.Ordinal) >= 0))
+                    (digits.Length > 1 && PhoneMatches(customer.Phone, digits)))
                     found.Add(customer);
             }
 
             Sort(found);
             return found;
+        }
+
+        /// <summary>
+        /// Совпадение по телефону: ведущая восьмёрка или семёрка не мешает,
+        /// поэтому 89037775533 находит +7 (903) 777-55-33.
+        /// </summary>
+        private static bool PhoneMatches(string phone, string queryDigits)
+        {
+            string phoneDigits = Digits(phone);
+
+            if (phoneDigits.Length == 0 || queryDigits.Length == 0) return false;
+            if (phoneDigits.IndexOf(queryDigits, StringComparison.Ordinal) >= 0) return true;
+
+            // сравниваем без ведущей цифры выхода на междугороднюю связь
+            string shortPhone = WithoutLead(phoneDigits);
+            string shortQuery = WithoutLead(queryDigits);
+
+            if (shortQuery.Length < 2) return false;
+            return shortPhone.IndexOf(shortQuery, StringComparison.Ordinal) >= 0;
+        }
+
+        /// <summary>Телефон без ведущей восьмёрки или семёрки.</summary>
+        private static string WithoutLead(string digits)
+        {
+            if (digits.Length > 10 && (digits[0] == '8' || digits[0] == '7'))
+                return digits.Substring(1);
+
+            return digits;
         }
 
         private static bool Contains(string text, string query)

@@ -83,6 +83,8 @@ namespace KotovCalc
 
         protected override void OnTextChanged(EventArgs e)
         {
+            // защита от повторного входа: форматирование меняет текст и снова вызывает событие
+            if (_formatting) { base.OnTextChanged(e); return; }
             base.OnTextChanged(e);
 
             if (_formatting) return;
