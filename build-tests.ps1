@@ -69,10 +69,11 @@ Write-Host '==> Compiling the Word checks' -ForegroundColor Cyan
     (Join-Path $test 'DocxCheck.cs')
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
-if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
-    (Join-Path $test 'Harness8.cs')
-& $csc $commonArgs $commonRefs /main:Harness8 "/out:$out7" $sourceList `
 Write-Host '==> Compiling the service host' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:Harness8 "/out:$out7" $sourceList `
+    (Join-Path $test 'Harness8.cs')
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
+
 Write-Host '==> Compiling the store checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:Harness6 "/out:$out6" $sourceList `
     (Join-Path $test 'Harness6.cs')

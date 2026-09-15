@@ -122,7 +122,7 @@ namespace KotovCalc
             // --- нижняя панель с итогом и кнопками (докbуем первой) ---
             Panel bottom = new Panel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 100;
+            bottom.Height = 166;
             bottom.Paint += delegate(object s, PaintEventArgs e)
             {
                 using (Pen pen = new Pen(Splitter))
@@ -133,7 +133,7 @@ namespace KotovCalc
             _totalLabel.AutoSize = true;
             _totalLabel.Font = _totalFont;
             _totalLabel.ForeColor = Color.FromArgb(20, 70, 130);
-            _totalLabel.Location = new Point(14, 12);
+            _totalLabel.Location = new Point(360, 124);
             _totalLabel.Text = "ИТОГО: 0,00 \u20BD";
             bottom.Controls.Add(_totalLabel);
 
@@ -187,7 +187,7 @@ namespace KotovCalc
             btnNone.Click += delegate { SetAllVisible(false); };
             top.Controls.Add(btnNone);
 
-            Button btnPrice = MakeButton("Прайс-лист…", 122);   // встроенный редактор цен
+            Button btnPrice = MakeButton("Каталог номенклатуры…", 122);   // встроенный редактор цен
             btnPrice.Location = new Point(600, 10);
             btnPrice.Click += delegate { OpenPriceEditor(); };
             top.Controls.Add(btnPrice);
@@ -228,15 +228,15 @@ namespace KotovCalc
             EventHandler placeActions = delegate
             {
                 int right = bottom.ClientSize.Width - 14;
-                _btnGenerate.Location = new Point(right - _btnGenerate.Width, 44);
+                _btnGenerate.Location = new Point(right - _btnGenerate.Width, 78);
                 right -= _btnGenerate.Width + 8;
-                _btnPreview.Location = new Point(right - _btnPreview.Width, 44);
+                _btnPreview.Location = new Point(right - _btnPreview.Width, 78);
                 right -= _btnPreview.Width + 8;
-                btnCopy.Location = new Point(right - btnCopy.Width, 44);
+                btnCopy.Location = new Point(right - btnCopy.Width, 78);
                 right -= btnCopy.Width + 8;
-                btnReset.Location = new Point(right - btnReset.Width, 44);
+                btnReset.Location = new Point(right - btnReset.Width, 78);
                 right -= btnReset.Width + 8;
-                _btnLogo.Location = new Point(right - _btnLogo.Width, 44);
+                _btnLogo.Location = new Point(right - _btnLogo.Width, 78);
 
                 LayoutBottomLabels();
 
@@ -380,7 +380,7 @@ namespace KotovCalc
             if (!string.IsNullOrEmpty(error)) SetStatus(error);
 
             SetStatus("Загружено позиций: " + _catalog.Count +
-                      "  •  прайс-лист хранится в приложении");
+                      "  •  каталог хранится в приложении");
 
             _rows.Clear();
             foreach (ServiceItem item in _catalog) _rows.Add(new EstimateRow(item));
@@ -476,7 +476,7 @@ namespace KotovCalc
 
             if (!string.IsNullOrEmpty(error)) SetStatus(error);
             else
-                SetStatus("Прайс-лист обновлён: " + _catalog.Count +
+                SetStatus("Каталог обновлён: " + _catalog.Count +
                           " поз.  •  отметки сохранены");
 
             RebuildGrid(snapshot);
@@ -734,7 +734,7 @@ namespace KotovCalc
             }
 
             RebuildGrid();
-            SetStatus("Отметки сняты. Цены можно изменить кнопкой «Прайс-лист…».");
+            SetStatus("Отметки сняты. Цены можно изменить кнопкой «Каталог номенклатуры…».");
         }
 
         private void Recalculate()
@@ -791,21 +791,21 @@ namespace KotovCalc
             int panelWidth = panel != null ? panel.ClientSize.Width : ClientSize.Width;
             int limit = Math.Max(260, panelWidth - 760);
 
-            _totalLabel.Location = new Point(248, 12);
+            _totalLabel.Location = new Point(360, 124);
             _totalLabel.AutoSize = false;
-            _totalLabel.Size = new Size(limit, 30);
+            _totalLabel.Size = new Size(Math.Max(200, panelWidth - 620), 30);
             _totalLabel.AutoEllipsis = true;
 
-            _countLabel.Location = new Point(20, 42);
+            _countLabel.Location = new Point(14, 118);
             _countLabel.AutoSize = false;
-            _countLabel.Size = new Size(limit, 20);
+            _countLabel.Size = new Size(Math.Max(200, panelWidth - 780), 20);
             _countLabel.AutoEllipsis = true;
 
             if (_subtotalLabel != null)
             {
-                _subtotalLabel.Location = new Point(20, 64);
+                _subtotalLabel.Location = new Point(360, 122);
                 _subtotalLabel.AutoSize = false;
-                _subtotalLabel.Size = new Size(limit, 20);
+                _subtotalLabel.Size = new Size(Math.Max(200, panelWidth - 620), 20);
                 _subtotalLabel.AutoEllipsis = true;
                 _subtotalLabel.Visible = true;
             }
@@ -1003,12 +1003,12 @@ namespace KotovCalc
                 if (editor.DialogResult == DialogResult.OK)
                 {
                     ReloadPricesPreserving();
-                    SetStatus("Прайс-лист сохранён внутри программы" +
+                    SetStatus("Каталог сохранён внутри программы" +
                               "  •  позиций: " + _catalog.Count);
                 }
                 else
                 {
-                    SetStatus("Редактор прайс-листа закрыт без сохранения.");
+                    SetStatus("Редактор каталога закрыт без сохранения.");
                 }
             }
         }

@@ -146,7 +146,7 @@ namespace KotovCalc
 
         private void BuildInterface()
         {
-            Text = "Прайс-лист — Расчет сметы";
+            Text = "Каталог номенклатуры — Расчет сметы";
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(940, 560);
             ClientSize = new Size(1040, 660);
@@ -182,7 +182,7 @@ namespace KotovCalc
             bottom.Controls.Add(hint);
 
             // Слева — действия со всем прайс-листом целиком.
-            Button btnClear = MakeButton("Очистить прайс", 160);
+            Button btnClear = MakeButton("Очистить каталог", 160);
             btnClear.Location = new Point(14, 62);
             btnClear.ForeColor = Color.FromArgb(160, 40, 40);
             btnClear.Click += delegate { ClearAllRows(); };
@@ -324,7 +324,7 @@ namespace KotovCalc
             StatusStrip status = new StatusStrip();
             status.SizingGrip = false;
             _statusText = new ToolStripStatusLabel(
-                "Прайс-лист хранится в приложении: " + _storePath);
+                "Каталог хранится в приложении: " + _storePath);
             status.Items.Add(_statusText);
 
             _grid = BuildGrid();               // таблица создаётся ровно один раз
@@ -459,7 +459,7 @@ namespace KotovCalc
             int total = _rows.Count;
             if (total == 0)
             {
-                SetStatus("Прайс-лист и так пуст.");
+                SetStatus("Каталог и так пуст.");
                 return;
             }
 
@@ -480,8 +480,8 @@ namespace KotovCalc
             SetInfo();
             MarkDirty(true);
 
-            SetStatus("Прайс-лист очищен: удалено позиций — " + total +
-                      ". Нажмите «Сохранить», чтобы записать пустой прайс-лист.");
+            SetStatus("Каталог очищен: удалено позиций — " + total +
+                      ". Нажмите «Сохранить», чтобы записать пустой каталог.");
         }
 
         /// <summary>Возврат заводского прайс-листа с подтверждением.</summary>
@@ -499,9 +499,9 @@ namespace KotovCalc
             {
                 confirmed = MessageBox.Show(this,
                     total == 0
-                        ? "Загрузить заводской прайс-лист?"
-                        : "Заменить текущий прайс-лист (" + total + " позиций) заводским?",
-                    "Заводской прайс-лист", MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
+                        ? "Загрузить заводской каталог?"
+                        : "Заменить текущий каталог (" + total + " позиций) заводским?",
+                    "Заводской каталог", MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
                     != DialogResult.Cancel;
             }
 
@@ -512,8 +512,8 @@ namespace KotovCalc
 
                 if (items == null || items.Count == 0)
                 {
-                    MessageBox.Show(this, "Заводской прайс-лист пуст.",
-                        "Заводской прайс-лист", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(this, "Заводской каталог пуст.",
+                        "Заводской каталог", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -528,7 +528,7 @@ namespace KotovCalc
                 SetInfo();
                 MarkDirty(true);
 
-                SetStatus("Заводской прайс-лист восстановлен и записан: позиций — " + items.Count + ".");
+                SetStatus("Заводской каталог восстановлен и записан: позиций — " + items.Count + ".");
             }
         }
 
@@ -547,7 +547,7 @@ namespace KotovCalc
 
             using (Form dialog = new Form())
             {
-                dialog.Text = "Очистка прайс-листа";
+                dialog.Text = "Очистка каталога";
                 dialog.StartPosition = FormStartPosition.CenterParent;
                 dialog.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dialog.MinimizeBox = false;
@@ -560,10 +560,10 @@ namespace KotovCalc
                 message.AutoSize = false;
                 message.Location = new Point(16, 14);
                 message.Size = new Size(468, 76);
-                message.Text = "Будут удалены все позиции прайс-листа: " + total +
+                message.Text = "Будут удалены все позиции каталога: " + total +
                                ". Вместе с ними пропадут цены и разделы." + Environment.NewLine +
                                Environment.NewLine +
-                               "Сначала прайс-лист сохраняется в резервную копию, поэтому " +
+                               "Сначала каталог сохраняется в резервную копию, поэтому " +
                                "его можно будет вернуть. Но записи в сметах на удалённые " +
                                "позиции станут пустыми.";
                 dialog.Controls.Add(message);
@@ -1477,14 +1477,14 @@ namespace KotovCalc
                     "Найдено позиций с ошибками: " + problems +
                     "\n\nЗаполните наименование и раздел, проверьте цены — " +
                     "ошибочные ячейки помечены красным значком.",
-                    "Проверка прайс-листа", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    "Проверка каталога", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (_rows.Count == 0)
             {
                 if (MessageBox.Show(this,
-                        "Список позиций пуст. Сохранить пустой прайс-лист?",
+                        "Список позиций пуст. Сохранить пустой каталог?",
                         "Сохранение", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
                     != DialogResult.Yes)
                     return;
@@ -1508,33 +1508,33 @@ namespace KotovCalc
             catch (Exception ex)
             {
                 DialogResult answer = MessageBox.Show(this,
-                    "Не удалось сохранить прайс-лист:\n" + ex.Message +
-                    "\n\nВыгрузить прайс-лист в файл, чтобы не потерять правки?",
+                    "Не удалось сохранить каталог:\n" + ex.Message +
+                    "\n\nВыгрузить каталог в файл, чтобы не потерять правки?",
                     "Ошибка сохранения", MessageBoxButtons.YesNo, MessageBoxIcon.Error);
 
                 if (answer == DialogResult.Yes) ExportToFile(items);
             }
         }
 
-        /// <summary>Выгрузка прайс-листа в файл TSV — для Excel или резервной копии.</summary>
+        /// <summary>Выгрузка каталога в файл TSV — для Excel или резервной копии.</summary>
         private void ExportToFile(IList<ServiceItem> items)
         {
             SaveFileDialog dialog = new SaveFileDialog();
-            dialog.Title = "Выгрузить прайс-лист в файл";
-            dialog.Filter = "Прайс-лист (*.tsv)|*.tsv|Все файлы (*.*)|*.*";
+            dialog.Title = "Выгрузить каталог в файл";
+            dialog.Filter = "Каталог номенклатуры (*.tsv)|*.tsv|Все файлы (*.*)|*.*";
             dialog.InitialDirectory = PriceBook.StoreFolder;
-            dialog.FileName = "Прайс-лист_" + DateTime.Now.ToString("yyyy-MM-dd") + ".tsv";
+            dialog.FileName = "Каталог_" + DateTime.Now.ToString("yyyy-MM-dd") + ".tsv";
 
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
             try
             {
                 PriceBook.ExportTsv(dialog.FileName, items);
-                SetStatus("Прайс-лист выгружен в файл: " + dialog.FileName);
+                SetStatus("Каталог выгружен в файл: " + dialog.FileName);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Не удалось выгрузить прайс-лист:\n" + ex.Message,
+                MessageBox.Show(this, "Не удалось выгрузить каталог:\n" + ex.Message,
                     "Экспорт", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -1555,7 +1555,7 @@ namespace KotovCalc
             ExportToFile(items);
         }
 
-        /// <summary>Загрузка прайс-листа из файла TSV (замена текущего списка).</summary>
+        /// <summary>Загрузка каталога из файла TSV (замена текущего списка).</summary>
         private void ImportFromFile()
         {
             if (_grid.IsCurrentCellInEditMode)
@@ -1565,8 +1565,8 @@ namespace KotovCalc
             }
 
             OpenFileDialog dialog = new OpenFileDialog();
-            dialog.Title = "Загрузить прайс-лист из файла";
-            dialog.Filter = "Прайс-лист (*.tsv;*.txt)|*.tsv;*.txt|Все файлы (*.*)|*.*";
+            dialog.Title = "Загрузить каталог из файла";
+            dialog.Filter = "Каталог номенклатуры (*.tsv;*.txt)|*.tsv;*.txt|Все файлы (*.*)|*.*";
             dialog.InitialDirectory = PriceBook.StoreFolder;
 
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
@@ -1593,9 +1593,9 @@ namespace KotovCalc
             }
 
             if (MessageBox.Show(this,
-                    "Заменить текущий прайс-лист (" + _rows.Count + " поз.) данными из файла (" +
+                    "Заменить текущий каталог (" + _rows.Count + " поз.) данными из файла (" +
                     items.Count + " поз.)?",
-                    "Импорт прайс-листа", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                    "Импорт каталога", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
                 != DialogResult.Yes)
                 return;
 
@@ -1608,7 +1608,7 @@ namespace KotovCalc
             RefreshGrid();
             MarkDirty(true);
             SetStatus("Загружено из файла позиций: " + items.Count +
-                      ". Не забудьте сохранить прайс-лист.");
+                      ". Не забудьте сохранить каталог.");
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)

@@ -18,6 +18,7 @@ namespace KotovCalc
     internal static class ConnectionSettings
     {
         private static IDataStore _store = new FileDataStore();
+        private static IEstimateArchive _archive = new FileEstimateArchive();
         private static PgConnectionInfo _database;
 
         /// <summary>Режим работы базы: пустая строка — файлы.</summary>
@@ -47,6 +48,12 @@ namespace KotovCalc
             get { return _store; }
         }
 
+        /// <summary>Действующий архив смет: файлы или база данных.</summary>
+        public static IEstimateArchive Archive
+        {
+            get { return _archive; }
+        }
+
         /// <summary>Параметры подключения к базе или null в файловом режиме.</summary>
         public static PgConnectionInfo Database
         {
@@ -74,6 +81,7 @@ namespace KotovCalc
 
             _database = info;
             _store = sql;
+            _archive = new SqlEstimateArchive(info);
             DatabaseMode = "sql";
 
             DatabaseHost = info.Host;

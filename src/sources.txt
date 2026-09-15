@@ -11,9 +11,13 @@ ConnectionForm.cs
 SessionEstimateStore.cs
 DocumentBuilder.cs
 CompanyLogo.cs
+EstimateArchive.cs
+SqlEstimateArchive.cs
 PriceBook.cs
 EstimateDocx.cs
 MainFormFeatures.cs
 PriceEditorForm.cs
+EstimateListForm.cs
+MainFormEstimates.cs
 MainForm.cs
 Program.cs

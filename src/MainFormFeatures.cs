@@ -147,6 +147,17 @@ namespace KotovCalc
             _btnTheme.Click += delegate { ToggleTheme(); };
             bottom.Controls.Add(_btnTheme);
 
+            // сметы: сохранение и открытие
+            Button btnSaveEstimate = MakeButton("Сохранить смету", 168);
+            btnSaveEstimate.Location = new Point(14, 43);
+            btnSaveEstimate.Click += delegate { SaveEstimate(); };
+            bottom.Controls.Add(btnSaveEstimate);
+
+            Button btnOpenEstimate = MakeButton("Открыть смету", 158);
+            btnOpenEstimate.Location = new Point(190, 43);
+            btnOpenEstimate.Click += delegate { OpenEstimate(); };
+            bottom.Controls.Add(btnOpenEstimate);
+
             // логотип компании: кнопка выбора и значок подтверждения
             _btnLogo = MakeButton("Логотип…", 118);
             _btnLogo.Click += delegate { ChooseLogo(); };
@@ -339,7 +350,7 @@ namespace KotovCalc
 
             string message = "Набор «" + template.Name + "»: отмечено позиций — " + applied;
             if (missing.Count > 0)
-                message += ", не найдено в прайсе — " + missing.Count;
+                message += ", не найдено в каталоге — " + missing.Count;
 
             SetStatus(message);
             SaveSettings();
@@ -798,7 +809,7 @@ namespace KotovCalc
             }
 
             string question = "Загрузить данные из файла?\n\n" + bundle.Summary();
-            if (bundle.HasPrices) question += "\nПрайс-лист будет заменён.";
+            if (bundle.HasPrices) question += "\nКаталог номенклатуры будет заменён.";
             if (bundle.HasSettings) question += "\nРеквизиты и скидка будут заменены.";
 
             if (MessageBox.Show(this, question, "Обмен данными",
