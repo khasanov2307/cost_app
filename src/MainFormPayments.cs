@@ -145,11 +145,24 @@ namespace KotovCalc
 
             message += "   •   заявка сохранена, позиций: " + estimate.Items.Count;
 
+            // оплата закрывает заявку: статус, списание со склада и чек
+            estimate.Status = EstimateStatus.Paid;
+            try { ConnectionSettings.Archive.Save(estimate); } catch { }
+
+            WriteOffEstimate(estimate);
+            ShowReceipt(estimate.Number);
+
             // после оплаты заявка закрыта: отметки снимаются, программа готова к следующей
             // номер и отметки сбрасываются: следующая заявка получит свой номер
             StartNewEstimate(false, true);
 
             SetStatus(message + "   •   можно оформлять следующую.");
+        }
+
+        /// <summary>Открыть редактор каталога (для горячей клавиши).</summary>
+        private void OpenCatalogEditor()
+        {
+            OpenPriceEditor();
         }
 
         // -------------------------------------------------------------- кассы

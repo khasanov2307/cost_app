@@ -31,7 +31,7 @@ namespace KotovCalc
         private bool _restoring;
 
         private TextBox _numberBox;
-        private TextBox _customerBox;
+        private TextBox _customerBox;   // прежнее поле заказчика (заменено списком с подсказками)
         private NumericUpDown _discountBox;
         private ComboBox _templateBox;
         private TextBox _templateSearch;
@@ -61,7 +61,7 @@ namespace KotovCalc
         /// <summary>Наборы услуг и реквизиты документа в верхней панели, кнопки — в нижней.</summary>
         private void BuildExtraToolbar(Panel top, Panel bottom)
         {
-            top.Height = 124;
+            top.Height = 172;   // три строки: поиск, наборы, реквизиты заявки
 
             // --- первая строка: наборы услуг ---
             Label lblTemplate = MakeLabel("Набор услуг:");
@@ -99,41 +99,8 @@ namespace KotovCalc
             _templateSearch.TextChanged += Template_Selected;
             top.Controls.Add(_templateSearch);
 
-            // --- вторая строка: номер заявки, заказчик и скидка ---
-            Label lblNumber = MakeLabel("Номер заявки:");
-            lblNumber.Location = new Point(14, 92);
-            top.Controls.Add(lblNumber);
-
-            _numberBox = new TextBox();
-            _numberBox.Location = new Point(110, 88);
-            _numberBox.Width = 90;
-            _numberBox.TextChanged += DocumentFields_Changed;
-            top.Controls.Add(_numberBox);
-
-            Label lblCustomer = MakeLabel("Заказчик (ФИО):");
-            lblCustomer.Location = new Point(214, 92);
-            top.Controls.Add(lblCustomer);
-
-            _customerBox = new TextBox();
-            _customerBox.Location = new Point(324, 88);
-            _customerBox.Width = 320;
-            _customerBox.TextChanged += DocumentFields_Changed;
-            top.Controls.Add(_customerBox);
-
-            Label lblDiscount = MakeLabel("Скидка, %:");
-            lblDiscount.Location = new Point(664, 92);
-            top.Controls.Add(lblDiscount);
-
-            _discountBox = new NumericUpDown();
-            _discountBox.Location = new Point(736, 88);
-            _discountBox.Width = 90;
-            _discountBox.DecimalPlaces = 1;
-            _discountBox.Minimum = 0m;
-            _discountBox.Maximum = 90m;
-            _discountBox.Increment = 5m;
-            _discountBox.TextAlign = HorizontalAlignment.Right;
-            _discountBox.ValueChanged += DocumentFields_Changed;
-            top.Controls.Add(_discountBox);
+            // --- строки реквизитов: номер, статус, заказчик, автомобиль ---
+            BuildRequisiteRow(top);
 
             // --- нижняя панель: данные, тема, предпросмотр, подытог ---
             Button btnData = MakeButton("Данные…", 110);
@@ -145,7 +112,8 @@ namespace KotovCalc
             _btnOnlySelected = MakeButton("Показать только выбранные", 230);
             _btnOnlySelected.FlatStyle = FlatStyle.System;
             _btnOnlySelected.Click += delegate { ToggleOnlySelected(); };
-            top.Controls.Add(_btnOnlySelected);
+            bottom.Controls.Add(_btnOnlySelected);
+            _btnOnlySelected.Location = new Point(246, 10);
 
 
             _btnTheme = MakeButton("Тёмная", 100);
@@ -171,7 +139,7 @@ namespace KotovCalc
             try
             {
                 _numberBox.Text = _fields.Number;
-                _customerBox.Text = _fields.Customer;
+            RestoreCustomerFields();
                 _discountBox.Value = AppSettings.ClampDiscount(_fields.Discount);
                 FillTemplateList(_settings.LastTemplate);
             }
@@ -188,7 +156,7 @@ namespace KotovCalc
             if (_restoring) return;
 
             _fields.Number = _numberBox.Text;
-            _fields.Customer = _customerBox.Text;
+            _fields.Customer = _customerPick == null ? _fields.Customer : _customerPick.Text;
             _fields.Discount = _discountBox.Value;
             _fields.Normalize();
 
@@ -753,6 +721,14 @@ namespace KotovCalc
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Кассы и балансы…", null, delegate { OpenCashDesks(); });
             menu.Items.Add("Показатели…", null, delegate { OpenDashboard(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Заказчики…", null, delegate { OpenCustomers(); });
+            menu.Items.Add("Склад…", null, delegate { OpenWarehouse(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Чек по заявке…", null, delegate { ShowReceipt(_fields.Number.Trim()); });
+            menu.Items.Add("Повторить прошлую заявку…", null, delegate { CopyLastEstimate(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Горячие клавиши", null, delegate { ShowHotKeys(); });
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Выгрузить все данные…", null, delegate { ExportData(); });
             menu.Items.Add("Загрузить данные…", null, delegate { ImportData(); });

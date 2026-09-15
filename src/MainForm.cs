@@ -166,7 +166,7 @@ namespace KotovCalc
             // --- верхняя панель: поиск и работа со справочником ---
             Panel top = new Panel();
             top.Dock = DockStyle.Top;
-            top.Height = 46;
+            top.Height = 172;
 
             Label lblFind = new Label();
             lblFind.Text = "Поиск:";
@@ -205,6 +205,7 @@ namespace KotovCalc
 
             // --- таблица услуг ---
             _grid = CreateGrid();
+            _grid.Dock = DockStyle.Fill;
 
             // --- строка состояния ---
             StatusStrip status = new StatusStrip();
@@ -217,7 +218,7 @@ namespace KotovCalc
             Controls.Add(top);
             Controls.Add(status);
 
-            _grid.BringToFront();
+            _grid.BringToFront();   // таблица в середине: панели сверху и снизу остаются видны
 
             // Кнопки расставляются по правому краю панели:
             // верхняя строка — предпросмотр, копирование, сброс, формирование;
@@ -230,6 +231,10 @@ namespace KotovCalc
             Button btnPayment = MakeButton("Оплата", 150);
             btnPayment.Click += delegate { RegisterPayment(); };
             bottom.Controls.Add(btnPayment);
+
+            _btnCopyLast = MakeButton("Повторить заявку", 160);
+            _btnCopyLast.Click += delegate { CopyLastEstimate(); };
+            bottom.Controls.Add(_btnCopyLast);
 
             Button btnSaveEstimate = MakeButton("Сохранить заявку", 168);
             btnSaveEstimate.Click += delegate { SaveEstimate(); };
@@ -262,11 +267,17 @@ namespace KotovCalc
                 int estimateRight = bottom.ClientSize.Width - 14;
                 btnOpenEstimate.Location = new Point(estimateRight - btnOpenEstimate.Width, 10);
                 estimateRight -= btnOpenEstimate.Width + 8;
-                btnSaveEstimate.Location = new Point(estimateRight - btnSaveEstimate.Width, 10);
+                estimateRight -= btnSaveEstimate.Width + 8;
+                btnSaveEstimate.Location = new Point(estimateRight, 10);
+
+                // «Повторить заявку» — слева от «Сохранить заявку»
+                estimateRight -= _btnCopyLast.Width + 8;
+                _btnCopyLast.Location = new Point(estimateRight, 10);
 
                 LayoutBottomLabels();
             };
             bottom.Resize += placeActions;
+            ApplyHotKeys();
             if (_btnOnlySelected != null && _btnOnlySelected.Parent != null)
                 _btnOnlySelected.Parent.Resize += delegate { PlaceOnlySelectedButton(); };
             placeActions(null, EventArgs.Empty);
@@ -721,17 +732,13 @@ namespace KotovCalc
             return null;
         }
 
-        /// <summary>Показ только отмеченных позиций: повторное нажатие отменяет фильтр.</summary>
-        /// <summary>Кнопка фильтра — в правом верхнем углу над таблицей.</summary>
+        /// <summary>Кнопка фильтра — в нижней панели, на уровне «Данные» и «Тёмная».</summary>
         private void PlaceOnlySelectedButton()
         {
             if (_btnOnlySelected == null) return;
+            if (_btnOnlySelected.Parent == null) return;
 
-            Control parent = _btnOnlySelected.Parent;
-            if (parent == null) return;
-
-            _btnOnlySelected.Location = new Point(
-                Math.Max(14, parent.ClientSize.Width - _btnOnlySelected.Width - 8), 88);
+            _btnOnlySelected.Location = new Point(246, 10);
 
             UpdateOnlySelectedButton();
         }

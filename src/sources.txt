@@ -28,5 +28,10 @@ MainFormEstimates.cs
 MainFormPayments.cs
 DashboardForm.cs
 PaymentForm.cs
+MainFormExtras.cs
+MainFormRequisites.cs
+TextForm.cs
 MainForm.cs
 Program.cs
+CustomerForm.cs
+WarehouseForm.cs

@@ -136,17 +136,26 @@ namespace KotovCalc
     /// <summary>Реквизиты документа, который формируется из заявки.</summary>
     internal sealed class DocumentFields
     {
-        public string Number = "";      // номер заявки
-        public string Customer = "";    // ФИО заказчика
-        public decimal Discount;        // скидка на всю заявку, %
+        public string Number = "";          // номер заявки
+        public string Customer = "";        // ФИО заказчика
+        public string CustomerPhone = "";   // телефон заказчика
+        public string Car = "";             // автомобиль
+        public string Plate = "";           // госномер
+        public decimal Discount;            // скидка на всю заявку, %
 
         public void Normalize()
         {
             if (Number == null) Number = "";
             if (Customer == null) Customer = "";
+            if (CustomerPhone == null) CustomerPhone = "";
+            if (Car == null) Car = "";
+            if (Plate == null) Plate = "";
 
             Number = Number.Trim();
             Customer = Customer.Trim();
+            CustomerPhone = CustomerPhone.Trim();
+            Car = Car.Trim();
+            Plate = Plate.Trim();
 
             if (Discount < 0m) Discount = 0m;
             if (Discount > 90m) Discount = 90m;
@@ -154,7 +163,15 @@ namespace KotovCalc
 
         public DocumentFields Copy()
         {
-            return new DocumentFields { Number = Number, Customer = Customer, Discount = Discount };
+            return new DocumentFields
+            {
+                Number = Number,
+                Customer = Customer,
+                CustomerPhone = CustomerPhone,
+                Car = Car,
+                Plate = Plate,
+                Discount = Discount
+            };
         }
     }
 

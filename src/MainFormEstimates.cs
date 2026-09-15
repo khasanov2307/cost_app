@@ -168,7 +168,7 @@ namespace KotovCalc
                     _fields.Normalize();
 
                     if (_numberBox != null) _numberBox.Text = "";
-                    if (_customerBox != null) _customerBox.Text = "";
+                if (_customerPick != null) _customerPick.Text = "";
                     if (_discountBox != null) _discountBox.Value = 0m;
                 }
 
@@ -191,12 +191,25 @@ namespace KotovCalc
         }
 
         /// <summary>Сборка заявки по текущим отметкам: номер, дата, заказчик, позиции.</summary>
+        /// <summary>Статус, выбранный в реквизитах заявки.</summary>
+        private EstimateStatus CurrentStatus()
+        {
+            if (_statusBox == null) return EstimateStatus.New;
+            return (EstimateStatus)Math.Max(0, _statusBox.SelectedIndex);
+        }
+
+
         private SavedEstimate BuildEstimate(string number, DateTime saved)
         {
             SavedEstimate estimate = new SavedEstimate();
             estimate.Number = number;
             estimate.Saved = saved;
             estimate.Customer = _fields.Customer;
+            estimate.CustomerPhone = _fields.CustomerPhone;
+            estimate.Car = _fields.Car;
+            estimate.Plate = _fields.Plate;
+            estimate.CustomerId = _customerId;
+            estimate.Status = CurrentStatus();
             estimate.Discount = AppSettings.ClampDiscount(_fields.Discount);
 
             int sequence, year;
@@ -314,6 +327,15 @@ namespace KotovCalc
         /// <summary>Восстановление отметок и количеств из сохранённой заявки.</summary>
         private void ApplyEstimate(SavedEstimate estimate)
         {
+            ApplyEstimate(estimate, true);
+        }
+
+        /// <summary>
+        /// Восстановление отметок, количеств и цен из заявки.
+        /// keepRequisites — оставить ли реквизиты выбранной заявки.
+        /// </summary>
+        private void ApplyEstimate(SavedEstimate estimate, bool keepRequisites)
+        {
             if (estimate == null) return;
 
             List<string> missing = new List<string>();
@@ -345,13 +367,13 @@ namespace KotovCalc
                     target.PriceOverride = item.Price == target.Item.Price ? (decimal?)null : item.Price;
                 }
 
-                _fields.Number = estimate.Number;
-                if (estimate.Customer.Length > 0) _fields.Customer = estimate.Customer;
-                _fields.Discount = AppSettings.ClampDiscount(estimate.Discount);
+                if (keepRequisites) _fields.Number = estimate.Number;
+                if (keepRequisites && estimate.Customer.Length > 0) _fields.Customer = estimate.Customer;
+                if (keepRequisites) _fields.Discount = AppSettings.ClampDiscount(estimate.Discount);
                 _fields.Normalize();
 
                 _numberBox.Text = _fields.Number;
-                _customerBox.Text = _fields.Customer;
+                RestoreCustomerFields();
                 _discountBox.Value = _fields.Discount;
             }
             finally

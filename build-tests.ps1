@@ -23,6 +23,7 @@ $out8 = Join-Path $test 'Harness9.exe'
 $outPay = Join-Path $test 'PaymentProbe.exe'
 $outFlow = Join-Path $test 'PayFlowProbe.exe'
 $outFilter = Join-Path $test 'FilterProbe.exe'
+$outNew = Join-Path $test 'Harness10.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
 $csc = @(
@@ -79,6 +80,11 @@ Write-Host '==> Compiling the service host' -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 
+
+Write-Host '==> Compiling the customer and warehouse checks' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:Harness10 "/out:$outNew" $sourceList `
+    (Join-Path $test 'Harness10.cs')
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 Write-Host '==> Compiling the selection filter checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:FilterProbe "/out:$outFilter" $sourceList `
@@ -156,10 +162,16 @@ if ($databaseReady) {
     & $out8 127.0.0.1 smeta smeta smeta
     $code = $LASTEXITCODE
     if ($code -ne 0) { throw "Payment checks failed with exit code $code" }
+
 }
 else {
     Write-Host '    PostgreSQL is not available - payment checks skipped'
 
+
+Write-Host '==> Running the customer and warehouse checks' -ForegroundColor Cyan
+& $outNew 127.0.0.1 smeta smeta smeta
+$code = $LASTEXITCODE
+if ($code -ne 0) { throw "Customer checks failed with exit code $code" }
 Write-Host '==> Checking the payment window' -ForegroundColor Cyan
 & $outPay
 if ($LASTEXITCODE -ne 0) { throw "Form checks failed with exit code $LASTEXITCODE" }

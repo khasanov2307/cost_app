@@ -32,6 +32,7 @@ namespace KotovCalc
         public static int DatabasePort = 5432;
         public static string DatabaseName = "smeta";
         public static string DatabaseUser = "smeta";
+        public static string User = "";                     // кто вошёл в программу (для чека)
 
         /// <summary>Пароль базы: только в памяти, на диск не пишется.</summary>
         public static string DatabasePassword = "";
