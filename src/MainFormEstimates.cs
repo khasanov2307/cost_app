@@ -120,7 +120,7 @@ namespace KotovCalc
                 SetStatus("Заявка сохранена: № " + number + " от " +
                           saved.ToString("dd.MM.yyyy HH:mm", Fmt.Ru) +
                           "   •   позиций: " + estimate.Items.Count +
-                          "   •   на сумму: " + Fmt.Money(estimate.Total) + " \u20BD");
+                          "   •   на сумму: " + Fmt.Money(estimate.Total));
             }
             catch (Exception ex)
             {
@@ -351,7 +351,7 @@ namespace KotovCalc
             string message = "Открыта заявка № " + estimate.Number + " от " +
                              estimate.Saved.ToString("dd.MM.yyyy HH:mm", Fmt.Ru) +
                              "   •   позиций: " + estimate.Items.Count +
-                             "   •   на сумму: " + Fmt.Money(estimate.Total) + " \u20BD";
+                             "   •   на сумму: " + Fmt.Money(estimate.Total);
 
             if (missing.Count > 0)
                 message += "   •   не найдено в каталоге: " + missing.Count;

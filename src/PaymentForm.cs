@@ -84,7 +84,7 @@ namespace KotovCalc
             header.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold, GraphicsUnit.Point);
             header.Text = "Заявка № " + (_number.Length == 0 ? "без номера" : _number) +
                           (_customer.Length > 0 ? "   " + _customer : "") + Environment.NewLine +
-                          "Сумма к оплате: " + Fmt.Money(_due) + " \u20BD";
+                          "Сумма к оплате: " + Fmt.Money(_due);
             Controls.Add(header);
 
             int top = 66;
@@ -271,10 +271,10 @@ namespace KotovCalc
             _cashDeskLabel.Text = kind == PaymentKind.Mixed ? "Касса для наличных:" : "Касса:";
             _cashlessDeskLabel.Text = "Касса для безналичных:";
 
-            string text = "К оплате: " + Fmt.Money(total) + " \u20BD";
+            string text = "К оплате: " + Fmt.Money(total);
 
-            if (left > 0.005m) text += "   •   осталось доплатить: " + Fmt.Money(left) + " \u20BD";
-            else if (left < -0.005m) text += "   •   больше суммы заявки на " + Fmt.Money(-left) + " \u20BD";
+            if (left > 0.005m) text += "   •   осталось доплатить: " + Fmt.Money(left);
+            else if (left < -0.005m) text += "   •   больше суммы заявки на " + Fmt.Money(-left);
             else if (_due > 0m) text += "   •   заявка оплачена полностью";
 
             if (cash > 0m && cashless > 0m)
@@ -720,7 +720,7 @@ namespace KotovCalc
             header.Location = new Point(16, 12);
             header.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold, GraphicsUnit.Point);
             header.Text = "Касса «" + desk + "»" + Environment.NewLine +
-                          "сейчас в кассе: " + Fmt.Money(balance) + " \u20BD";
+                          "сейчас в кассе: " + Fmt.Money(balance);
             Controls.Add(header);
 
             _income = new RadioButton();
@@ -801,7 +801,7 @@ namespace KotovCalc
 
             decimal after = _income.Checked ? balance + amount : balance - amount;
 
-            _summary.Text = "После операции в кассе будет: " + Fmt.Money(after) + " \u20BD";
+            _summary.Text = "После операции в кассе будет: " + Fmt.Money(after);
 
             if (after < 0m)
                 _summary.Text += "   •   изъятие больше остатка";

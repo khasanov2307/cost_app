@@ -20,6 +20,7 @@ $out5 = Join-Path $test 'Harness4.exe'
 $out6 = Join-Path $test 'Harness6.exe'
 $out7 = Join-Path $test 'Harness8.exe'
 $out8 = Join-Path $test 'Harness9.exe'
+$outPay = Join-Path $test 'PaymentProbe.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
 $csc = @(
@@ -73,6 +74,13 @@ if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCOD
 Write-Host '==> Compiling the service host' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:Harness8 "/out:$out7" $sourceList `
     (Join-Path $test 'Harness8.cs')
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
+
+
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
+Write-Host '==> Compiling the form checks' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:PaymentProbe "/out:$outPay" $sourceList `
+    (Join-Path $test 'PaymentProbe.cs')
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 Write-Host '==> Compiling the payment checks' -ForegroundColor Cyan
@@ -140,6 +148,10 @@ if ($databaseReady) {
 }
 else {
     Write-Host '    PostgreSQL is not available - payment checks skipped'
+
+Write-Host '==> Checking the payment window' -ForegroundColor Cyan
+& $outPay
+if ($LASTEXITCODE -ne 0) { throw "Form checks failed with exit code $LASTEXITCODE" }
 }
     $probe.Connect("127.0.0.1", 5432)
     $probe.Close()

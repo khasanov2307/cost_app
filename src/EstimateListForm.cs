@@ -174,7 +174,7 @@ namespace KotovCalc
             if (due > 0m)
             {
                 if (paid >= due - 0.005m) return "оплачена полностью";
-                return "оплачена частично, долг " + Fmt.Money(due - paid) + " \u20BD";
+                return "оплачена частично, долг " + Fmt.Money(due - paid);
             }
 
             return "оплачена";

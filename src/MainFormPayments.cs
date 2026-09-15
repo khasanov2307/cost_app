@@ -65,7 +65,7 @@ namespace KotovCalc
                     if (savedNow != null)
                         SetStatus("Заявка сохранена перед оплатой: № " + savedNow.Number +
                                   "   •   позиций: " + savedNow.Items.Count +
-                                  "   •   на сумму: " + Fmt.Money(savedNow.Total) + " \u20BD");
+                                  "   •   на сумму: " + Fmt.Money(savedNow.Total));
                 }
                 catch (Exception ex)
                 {
@@ -111,11 +111,11 @@ namespace KotovCalc
 
                 string message = "Оплата по заявке № " + number + ": " +
                                  PaymentKinds.Title(dialog.Result.Kind) + " " +
-                                 Fmt.Money(dialog.Result.Total) + " \u20BD" +
+                                 Fmt.Money(dialog.Result.Total) +
                                  "   •   касса: " + dialog.Result.DeskTitle;
 
                 if (dialog.Result.Remaining > 0m)
-                    message += "   •   осталось доплатить: " + Fmt.Money(dialog.Result.Remaining) + " \u20BD";
+                    message += "   •   осталось доплатить: " + Fmt.Money(dialog.Result.Remaining);
 
                 // после оплаты заявка закрыта: отметки снимаются, программа готова к следующей
                 StartNewEstimate(false);
