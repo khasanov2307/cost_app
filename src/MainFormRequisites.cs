@@ -2,8 +2,9 @@
 //  Строка реквизитов заявки: номер, статус, скидка, заказчик, телефон,
 //  автомобиль и госномер.
 //
-//  Заказчика можно выбрать из справочника (список с подсказками) или ввести
-//  строкой — тогда карточка создаётся при сохранении заявки.
+//  Заказчика можно выбрать из справочника или ввести строкой. Список
+//  наполняется заранее — при входе в поле и после ввода, но не в момент
+//  раскрытия: если очистить список при раскрытии, WinForms закрывает его.
 // ---------------------------------------------------------------------------
 
 using System;
@@ -25,6 +26,7 @@ namespace KotovCalc
 
         private string _customerId = "";
         private bool _showStock;
+        private bool _customerListFilling;        // защита от повторного входа
 
         /// <summary>Строка реквизитов: номер, статус, заказчик, автомобиль.</summary>
         private void BuildRequisiteRow(Panel top)
@@ -82,11 +84,13 @@ namespace KotovCalc
             _customerPick.Location = new Point(110, 124);
             _customerPick.Width = 280;
             _customerPick.DropDownStyle = ComboBoxStyle.DropDown;      // можно выбрать или ввести
-            _customerPick.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-            _customerPick.AutoCompleteSource = AutoCompleteSource.ListItems;
+            _customerPick.AutoCompleteMode = AutoCompleteMode.None;    // поиск ведёт наш код
             _customerPick.TextChanged += CustomerTyped;
+
+            // список наполняем заранее: в момент раскрытия менять его нельзя
+            _customerPick.Enter += delegate { RefreshCustomerList(); };
+            _customerPick.DropDown += delegate { FillCustomerList(); };
             _customerPick.SelectedIndexChanged += CustomerPicked;
-            _customerPick.DropDown += delegate { RefreshCustomerList(); };
             top.Controls.Add(_customerPick);
 
             Label lblPhone = MakeLabel("Телефон:");
@@ -121,7 +125,55 @@ namespace KotovCalc
             top.Controls.Add(_plateBox);
         }
 
-        /// <summary>Заполнение списка заказчиков для выбора и подсказок.</summary>
+        /// <summary>Наполнение списка заказчиков по введённому тексту.</summary>
+        private void RefreshCustomerList()
+        {
+            if (_customerPick == null || _customerListFilling) return;
+
+            string typed = _customerPick.Text;
+
+            // пустое поле — весь справочник, иначе поиск по ФИО или телефону
+            FillCustomerList(typed.Trim().Length == 0 ? CustomerSearch("") : CustomerSearch(typed));
+
+            // текст возвращаем после наполнения, чтобы поиск не сбивался
+            if (_customerPick.Text != typed) _customerPick.Text = typed;
+        }
+
+        /// <summary>То же, но по тексту, который виден в поле в момент раскрытия.</summary>
+        private void FillCustomerList()
+        {
+            if (_customerPick == null || _customerListFilling) return;
+
+            string typed = _customerPick.Text;
+            FillCustomerList(typed.Trim().Length == 0 ? CustomerSearch("") : CustomerSearch(typed));
+
+            if (_customerPick.Text != typed) _customerPick.Text = typed;
+        }
+
+        private void FillCustomerList(List<Customer> customers)
+        {
+            _customerListFilling = true;
+            try
+            {
+                _customerPick.BeginUpdate();
+                try
+                {
+                    _customerPick.Items.Clear();
+
+                    foreach (Customer customer in customers)
+                        _customerPick.Items.Add(customer.Caption);
+                }
+                finally
+                {
+                    _customerPick.EndUpdate();
+                }
+            }
+            finally
+            {
+                _customerListFilling = false;
+            }
+        }
+
         /// <summary>Поиск по ФИО, телефону, автомобилю или номеру.</summary>
         private List<Customer> CustomerSearch(string query)
         {
@@ -140,44 +192,18 @@ namespace KotovCalc
             return found;
         }
 
-
-        private void RefreshCustomerList()
-        {
-            if (_customerPick == null) return;
-
-            string typed = _customerPick.Text;
-
-            _customerPick.BeginUpdate();
-            try
-            {
-                _customerPick.Items.Clear();
-
-                string query = _customerPick.Text.Trim();
-
-                // если введены цифры — ищем по телефону, иначе по имени, машине и номеру
-                foreach (Customer customer in CustomerSearch(query))
-                    _customerPick.Items.Add(customer.Caption);
-            }
-            finally
-            {
-                _customerPick.EndUpdate();
-            }
-
-            // текст возвращаем после наполнения списка
-            _customerPick.Text = typed;
-        }
-
         /// <summary>Оператор выбрал заказчика из списка: заполняем данные.</summary>
         private void CustomerPicked(object sender, EventArgs e)
         {
             // при перезаполнении списка событие приходит с пустым выбором — пропускаем
-            if (_restoring) return;
+            if (_restoring || _customerListFilling) return;
+
             string caption = Convert.ToString(_customerPick.SelectedItem);
             if (caption.Length == 0) return;
 
             Customer customer = null;
 
-                foreach (Customer item in CustomerSearch(""))
+            foreach (Customer item in CustomerSearch(""))
                 if (item.Caption == caption) { customer = item; break; }
 
             if (customer == null) return;
@@ -199,15 +225,26 @@ namespace KotovCalc
             }
 
             SaveSettings();
+            SetStatus("Выбран заказчик: " + customer.Caption);
+
+            // список снова показывает весь справочник
+            RefreshCustomerList();
         }
 
         /// <summary>Оператор вводит заказчика строкой.</summary>
         private void CustomerTyped(object sender, EventArgs e)
         {
-            if (_restoring) return;
+            if (_restoring || _customerListFilling) return;
 
             _fields.Customer = _customerPick.Text;
             _customerId = "";
+
+            // если текст поставил выбор из списка, список не перезаполняем:
+            // иначе выбор сбросится и данные заказчика не подставятся
+            if (_customerPick.SelectedIndex >= 0) return;
+
+            // ищем по мере ввода, но пока список раскрыт, его не трогаем
+            if (!_customerPick.DroppedDown) RefreshCustomerList();
         }
 
         /// <summary>Данные заказчика в заявке: телефон, автомобиль, госномер.</summary>

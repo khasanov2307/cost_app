@@ -34,7 +34,9 @@ internal static class CustomerDropProbe
     {
         MethodInfo rectangle = typeof(ComboBox).GetMethod("get_DropDownButtonRectangle",
             BindingFlags.Instance | BindingFlags.NonPublic);
-        if (rectangle == null) throw new MissingMethodException("DropDownButtonRectangle");
+
+        // внутренний прямоугольник стрелки есть не во всех версиях: тогда раскрываем напрямую
+        if (rectangle == null) { OpenDropDown(box); return; }
 
         System.Drawing.Rectangle area = (System.Drawing.Rectangle)rectangle.Invoke(box, null);
         System.Drawing.Point point = new System.Drawing.Point(area.Left + area.Width / 2, area.Top + area.Height / 2);
@@ -162,10 +164,12 @@ internal static class CustomerDropProbe
         OpenDropDown(box);
         Application.DoEvents();
 
+
         if (box.Items.Count > 0)
         {
             box.SelectedIndex = 0;
             Application.DoEvents();
+
 
             PhoneBox phone = (PhoneBox)Field(form, "_phoneBox");
             Console.WriteLine("выбран: [" + box.Text + "], телефон [" + phone.Text + "]");
@@ -218,3 +222,4 @@ internal static class CustomerDropProbe
         Environment.Exit(1);
     }
 }
+
