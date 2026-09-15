@@ -95,6 +95,22 @@ namespace KotovCalc
 
         // ------------------------------------------------------- интерфейс
 
+        /// <summary>Чтение прайс-листа из выбранного хранилища: файлы или база.</summary>
+        private static List<ServiceItem> LoadPrices(out string error)
+        {
+            error = null;
+
+            try
+            {
+                return ConnectionSettings.Store.LoadPrices();
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return new List<ServiceItem>();
+            }
+        }
+
         private void BuildInterface()
         {
             Text = "Расчет сметы";
@@ -356,7 +372,7 @@ namespace KotovCalc
         private void LoadCatalog(bool firstRun)
         {
             string error;
-            List<ServiceItem> loaded = PriceBook.Load(out error);
+            List<ServiceItem> loaded = LoadPrices(out error);
 
             _catalog.Clear();
             _catalog.AddRange(loaded);
@@ -450,7 +466,7 @@ namespace KotovCalc
             List<PreservedRow> snapshot = SnapshotRows();
 
             string error;
-            List<ServiceItem> loaded = PriceBook.Load(out error);
+            List<ServiceItem> loaded = LoadPrices(out error);
 
             _catalog.Clear();
             _catalog.AddRange(loaded);

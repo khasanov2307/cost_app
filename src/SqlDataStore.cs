@@ -398,6 +398,23 @@ namespace KotovCalc
             }
         }
 
+        /// <summary>
+        /// Отпечаток данных: количество записей в таблицах. По нему программа
+        /// замечает правки, сделанные другими пользователями.
+        /// </summary>
+        public string Stamp()
+        {
+            using (PgClient client = Open())
+            {
+                object prices = client.Scalar("SELECT count(*) FROM smeta_prices");
+                object templates = client.Scalar("SELECT count(*) FROM smeta_templates");
+                object settings = client.Scalar("SELECT count(*) FROM smeta_settings");
+
+                if (prices == null) throw new PgException(client.LastError);
+
+                return "p" + prices + "t" + templates + "s" + settings;
+            }
+        }
         // -------------------------------------------------------- помощники
 
         private static PgException Fail(PgClient client)

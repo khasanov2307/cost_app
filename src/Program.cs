@@ -43,7 +43,100 @@ namespace KotovCalc
                     "Расчет сметы", MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
 
+            // Режим работы: файлы на этом компьютере или база данных.
+            // Если выбранная база недоступна, предлагаем перейти на файлы.
+            ConnectionSettings.Load();
+            PrepareStore();
+
             Application.Run(new MainForm());
+        }
+
+        /// <summary>
+        /// Подготовка хранилища при запуске: запрос пароля базы, вход в программу,
+        /// откат на файлы при недоступной базе.
+        /// </summary>
+        private static void PrepareStore()
+        {
+            if (ConnectionSettings.DatabaseMode != "sql")
+            {
+                ConnectionSettings.UseFiles();
+                return;
+            }
+
+            // пароль базы на диске не хранится — спрашиваем при запуске
+            if (string.IsNullOrEmpty(ConnectionSettings.DatabasePassword))
+            {
+                using (PasswordForm dialog = new PasswordForm(ConnectionSettings.DatabaseHost + ":" +
+                                                              ConnectionSettings.DatabasePort + " / " +
+                                                              ConnectionSettings.DatabaseName))
+                {
+                    if (dialog.ShowDialog() != DialogResult.OK || dialog.Password.Length == 0)
+                    {
+                        FallBackToFiles("Пароль базы данных не введён.");
+                        return;
+                    }
+
+                    ConnectionSettings.DatabasePassword = dialog.Password;
+                }
+            }
+
+            PgConnectionInfo info = ConnectionSettings.Build();
+
+            try
+            {
+                ConnectionSettings.UseSql(info);
+            }
+            catch (Exception ex)
+            {
+                FallBackToFiles("Не удалось подключиться к базе данных:\n" + ex.Message);
+                return;
+            }
+
+            SqlDataStore sql = ConnectionSettings.Store as SqlDataStore;
+            if (sql == null) return;
+
+            try
+            {
+                bool first = !sql.HasUsers();
+
+                while (true)
+                {
+                    using (LoginForm login = new LoginForm(sql, first))
+                    {
+                        if (login.ShowDialog() == DialogResult.OK) return;
+                    }
+
+                    // от входа можно отказаться и вернуться к файлам
+                    DialogResult answer = MessageBox.Show(
+                        "Вход не выполнен. Перейти к работе с файлами на этом компьютере?",
+                        "Вход в программу", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                    if (answer == DialogResult.Yes)
+                    {
+                        FallBackToFiles(null);
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                FallBackToFiles("Ошибка при входе в программу:\n" + ex.Message);
+            }
+        }
+
+        /// <summary>Переход на файловое хранилище с сообщением пользователю.</summary>
+        private static void FallBackToFiles(string reason)
+        {
+            ConnectionSettings.UseFiles();
+            ConnectionSettings.DatabaseMode = "";
+            ConnectionSettings.Save();
+
+            if (string.IsNullOrEmpty(reason)) return;
+
+            MessageBox.Show(
+                reason + "\n\nПрограмма продолжит работу с файлами на этом компьютере. " +
+                "Изменить режим можно в меню «Данные…» → «Подключение к базе данных…».",
+                "Подключение", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>Формирование сметы по всему прайс-листу в PDF. Возвращает код выхода.</summary>

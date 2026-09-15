@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -55,6 +56,12 @@ namespace KotovCalc
 
         StoreSnapshot LoadAll();
         void SaveSettings(StoreSnapshot snapshot);
+
+        /// <summary>
+        /// Отпечаток данных: если он изменился, значит прайс или наборы правил
+        /// другой пользователь — тогда программу нужно перечитать.
+        /// </summary>
+        string Stamp();
     }
 
     /// <summary>Хранилище в личной папке программы.</summary>
@@ -138,6 +145,33 @@ namespace KotovCalc
             settings.LastTemplate = snapshot.LastTemplate;
             settings.Save();
         }
+
+        /// <summary>Отпечаток данных: время правки файлов хранилища.</summary>
+        public string Stamp()
+        {
+            StringBuilder text = new StringBuilder();
+
+            string[] files = new string[]
+            {
+                PriceBook.StorePath,
+                System.IO.Path.Combine(PriceBook.StoreFolder, "templates.json")
+            };
+
+            foreach (string file in files)
+            {
+                try
+                {
+                    text.Append(System.IO.File.Exists(file)
+                        ? System.IO.File.GetLastWriteTimeUtc(file).Ticks.ToString(CultureInfo.InvariantCulture)
+                        : "нет");
+                }
+                catch { text.Append("?"); }
+                text.Append('|');
+            }
+
+            return text.ToString();
+        }
+
     }
 
     /// <summary>Пароль пользователя программы.</summary>

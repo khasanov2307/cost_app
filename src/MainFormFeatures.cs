@@ -43,6 +43,7 @@ namespace KotovCalc
         private Button _btnPreview;
         private Button _btnLogo;
         private Image _logoIcon;            // значок логотипа для нижней панели
+        private WebService _web;                   // сервис для веб-версии
 
         // цена для этой сметы: колонка добавляется последней
         private DataGridViewTextBoxColumn _colPrice;
@@ -486,6 +487,12 @@ namespace KotovCalc
         // ---------------------------------------------- логотип компании
 
         /// <summary>Выбор файла логотипа для печатной формы.</summary>
+        /// <summary>Останов сервиса при закрытии главного окна.</summary>
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            StopWebService();
+        }
+
         private void ChooseLogo()
         {
             OpenFileDialog dialog = new OpenFileDialog();
@@ -588,6 +595,66 @@ namespace KotovCalc
         }
 
 
+        // ---------------------------------------- подключение и веб-сервис
+
+        /// <summary>Окно выбора хранилища: файлы или база данных.</summary>
+        private void OpenConnectionSettings()
+        {
+            using (ConnectionForm dialog = new ConnectionForm())
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK) return;
+            }
+
+            try
+            {
+                ReloadPricesPreserving();
+                ApplyThemeColors();
+                ShowLogo();
+                SetStatus("Хранилище: " + ConnectionSettings.Store.Title);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Не удалось перечитать данные:\n" + ex.Message,
+                    "Подключение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            StartWebService();
+        }
+
+        /// <summary>Запуск сервиса для веб-версии, если он включён в настройках.</summary>
+        private void StartWebService()
+        {
+            if (_web != null)
+            {
+                _web.Dispose();
+                _web = null;
+            }
+
+            if (!ConnectionSettings.WebEnabled) return;
+
+            _web = new WebService(ConnectionSettings.Store, new SessionEstimateStore(), ConnectionSettings.WebPort);
+            string error = _web.Start();
+
+            if (error != null)
+            {
+                SetStatus(error);
+                MessageBox.Show(this, error, "Веб-версия", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _web = null;
+                return;
+            }
+
+            SetStatus("Сервис для веб-версии открыт: " + _web.Address);
+        }
+
+        /// <summary>Останов сервиса при закрытии программы.</summary>
+        private void StopWebService()
+        {
+            if (_web == null) return;
+            _web.Dispose();
+            _web = null;
+        }
+
         private void ShowPreview()
         {
             if (CountPicked() == 0)
@@ -676,6 +743,8 @@ namespace KotovCalc
         private void DataMenu()
         {
             ContextMenuStrip menu = new ContextMenuStrip();
+            menu.Items.Add("Подключение к базе данных…", null, delegate { OpenConnectionSettings(); });
+            menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Выгрузить все данные…", null, delegate { ExportData(); });
             menu.Items.Add("Загрузить данные…", null, delegate { ImportData(); });
             menu.Items.Add(new ToolStripSeparator());
@@ -766,6 +835,7 @@ namespace KotovCalc
                     ApplyThemeColors();
                     RestyleRows();
                     RestoreFormState();
+            StartWebService();
             ShowLogo();
                 }
 

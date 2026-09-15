@@ -103,7 +103,21 @@ internal static class DocxCheck
     /// <summary>Проверки готового .docx.</summary>
     private static void CheckFile(string path, string expectedNumber, string expectedCustomer, string expectedExecutor)
     {
-        byte[] raw = File.ReadAllBytes(path);
+        // файл может быть занят проверкой на вирусы — пробуем несколько раз
+        byte[] raw = null;
+        for (int attempt = 1; attempt <= 5; attempt++)
+        {
+            try
+            {
+                raw = File.ReadAllBytes(path);
+                break;
+            }
+            catch (IOException)
+            {
+                if (attempt == 5) throw;
+                System.Threading.Thread.Sleep(400);
+            }
+        }
         string name = Path.GetFileName(path);
         Console.WriteLine("файл: " + name + "  (" + raw.Length + " байт)");
         CheckTrue("[" + name + "] размер файла разумный", raw.Length > 1500, "всего " + raw.Length + " байт");

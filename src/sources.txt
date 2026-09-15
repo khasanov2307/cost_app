@@ -5,6 +5,10 @@ DataExchange.cs
 PgClient.cs
 DataStore.cs
 SqlDataStore.cs
+WebService.cs
+ConnectionSettings.cs
+ConnectionForm.cs
+SessionEstimateStore.cs
 DocumentBuilder.cs
 CompanyLogo.cs
 PriceBook.cs
