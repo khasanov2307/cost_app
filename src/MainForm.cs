@@ -905,18 +905,27 @@ namespace KotovCalc
             _totalLabel.Size = new Size(totalWidth, totalSize.Height);
             _totalLabel.AutoEllipsis = true;
 
-            _countLabel.Location = new Point(14, 128);
-            _countLabel.AutoSize = false;
-            _countLabel.Size = new Size(Math.Max(200, panelWidth - 780), 20);
-            _countLabel.AutoEllipsis = true;
+            // счётчик позиций и подытог со скидкой — в одной строке панели
+            int line = Math.Max(14, panel.Height - 30);
+
+            _countLabel.AutoSize = true;
+            _countLabel.AutoEllipsis = false;
+            _countLabel.Location = new Point(14, line);
 
             if (_subtotalLabel != null)
             {
-                _subtotalLabel.Location = new Point(360, 172);
-                _subtotalLabel.AutoSize = false;
-                _subtotalLabel.Size = new Size(Math.Max(200, panelWidth - 620), 20);
-                _subtotalLabel.AutoEllipsis = true;
+                _subtotalLabel.AutoSize = true;
+                _subtotalLabel.AutoEllipsis = false;
                 _subtotalLabel.Visible = true;
+
+                int subtotalLeft = _countLabel.Right + 24;
+                int subtotalWidth = _subtotalLabel.PreferredSize.Width;
+
+                // если места до итоговой суммы мало, переносим подытог ниже
+                if (subtotalLeft + subtotalWidth > _totalLabel.Left - 16)
+                    _subtotalLabel.Location = new Point(14, line + 20);
+                else
+                    _subtotalLabel.Location = new Point(subtotalLeft, line);
             }
         }
 
