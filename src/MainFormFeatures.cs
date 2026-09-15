@@ -147,14 +147,30 @@ namespace KotovCalc
             _btnTheme.Click += delegate { ToggleTheme(); };
             bottom.Controls.Add(_btnTheme);
 
+            // оплата, кассы и показатели
+            Button btnPayment = MakeButton("Оплата заявки", 158);
+            btnPayment.Location = new Point(14, 46);
+            btnPayment.Click += delegate { RegisterPayment(); };
+            bottom.Controls.Add(btnPayment);
+
+            Button btnDesks = MakeButton("Кассы", 110);
+            btnDesks.Location = new Point(180, 46);
+            btnDesks.Click += delegate { OpenCashDesks(); };
+            bottom.Controls.Add(btnDesks);
+
+            Button btnDashboard = MakeButton("Показатели", 132);
+            btnDashboard.Location = new Point(298, 46);
+            btnDashboard.Click += delegate { OpenDashboard(); };
+            bottom.Controls.Add(btnDashboard);
+
             // заявки: сохранение и открытие
             Button btnSaveEstimate = MakeButton("Сохранить заявку", 168);
-            btnSaveEstimate.Location = new Point(14, 43);
+            btnSaveEstimate.Location = new Point(14, 80);
             btnSaveEstimate.Click += delegate { SaveEstimate(); };
             bottom.Controls.Add(btnSaveEstimate);
 
             Button btnOpenEstimate = MakeButton("Открыть заявку", 158);
-            btnOpenEstimate.Location = new Point(190, 43);
+            btnOpenEstimate.Location = new Point(190, 80);
             btnOpenEstimate.Click += delegate { OpenEstimate(); };
             bottom.Controls.Add(btnOpenEstimate);
 

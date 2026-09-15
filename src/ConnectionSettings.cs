@@ -19,6 +19,7 @@ namespace KotovCalc
     {
         private static IDataStore _store = new FileDataStore();
         private static IEstimateArchive _archive = new FileEstimateArchive();
+        private static ICashBookStore _cashBook = new FileCashBook();
         private static PgConnectionInfo _database;
 
         /// <summary>Режим работы базы: пустая строка — файлы.</summary>
@@ -54,6 +55,12 @@ namespace KotovCalc
             get { return _archive; }
         }
 
+        /// <summary>Действующее хранилище касс и оплат: файлы или база данных.</summary>
+        public static ICashBookStore CashBook
+        {
+            get { return _cashBook; }
+        }
+
         /// <summary>Параметры подключения к базе или null в файловом режиме.</summary>
         public static PgConnectionInfo Database
         {
@@ -82,6 +89,7 @@ namespace KotovCalc
             _database = info;
             _store = sql;
             _archive = new SqlEstimateArchive(info);
+            _cashBook = new SqlCashBook(info);
             DatabaseMode = "sql";
 
             DatabaseHost = info.Host;

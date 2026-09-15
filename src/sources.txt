@@ -21,5 +21,8 @@ MainFormFeatures.cs
 PriceEditorForm.cs
 EstimateListForm.cs
 MainFormEstimates.cs
+MainFormPayments.cs
+DashboardForm.cs
+PaymentForm.cs
 MainForm.cs
 Program.cs

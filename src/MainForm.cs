@@ -122,7 +122,7 @@ namespace KotovCalc
             // --- нижняя панель с итогом и кнопками (докbуем первой) ---
             Panel bottom = new Panel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 186;
+            bottom.Height = 236;
             bottom.Paint += delegate(object s, PaintEventArgs e)
             {
                 using (Pen pen = new Pen(Splitter))
@@ -133,7 +133,7 @@ namespace KotovCalc
             _totalLabel.AutoSize = true;
             _totalLabel.Font = _totalFont;
             _totalLabel.ForeColor = Color.FromArgb(20, 70, 130);
-            _totalLabel.Location = new Point(360, 140);
+            _totalLabel.Location = new Point(360, 178);
             _totalLabel.Text = "ИТОГО: 0,00 \u20BD";
             bottom.Controls.Add(_totalLabel);
 
@@ -228,15 +228,15 @@ namespace KotovCalc
             EventHandler placeActions = delegate
             {
                 int right = bottom.ClientSize.Width - 14;
-                _btnGenerate.Location = new Point(right - _btnGenerate.Width, 78);
+                _btnGenerate.Location = new Point(right - _btnGenerate.Width, 112);
                 right -= _btnGenerate.Width + 8;
-                _btnPreview.Location = new Point(right - _btnPreview.Width, 78);
+                _btnPreview.Location = new Point(right - _btnPreview.Width, 112);
                 right -= _btnPreview.Width + 8;
-                btnCopy.Location = new Point(right - btnCopy.Width, 78);
+                btnCopy.Location = new Point(right - btnCopy.Width, 112);
                 right -= btnCopy.Width + 8;
-                btnReset.Location = new Point(right - btnReset.Width, 78);
+                btnReset.Location = new Point(right - btnReset.Width, 112);
                 right -= btnReset.Width + 8;
-                _btnLogo.Location = new Point(right - _btnLogo.Width, 78);
+                _btnLogo.Location = new Point(right - _btnLogo.Width, 112);
 
                 LayoutBottomLabels();
 
@@ -791,19 +791,19 @@ namespace KotovCalc
             int panelWidth = panel != null ? panel.ClientSize.Width : ClientSize.Width;
             int limit = Math.Max(260, panelWidth - 760);
 
-            _totalLabel.Location = new Point(360, 140);
+            _totalLabel.Location = new Point(360, 178);
             _totalLabel.AutoSize = false;
             _totalLabel.Size = new Size(Math.Max(200, panelWidth - 620), 30);
             _totalLabel.AutoEllipsis = true;
 
-            _countLabel.Location = new Point(14, 132);
+            _countLabel.Location = new Point(14, 168);
             _countLabel.AutoSize = false;
             _countLabel.Size = new Size(Math.Max(200, panelWidth - 780), 20);
             _countLabel.AutoEllipsis = true;
 
             if (_subtotalLabel != null)
             {
-                _subtotalLabel.Location = new Point(360, 136);
+                _subtotalLabel.Location = new Point(360, 172);
                 _subtotalLabel.AutoSize = false;
                 _subtotalLabel.Size = new Size(Math.Max(200, panelWidth - 620), 20);
                 _subtotalLabel.AutoEllipsis = true;
