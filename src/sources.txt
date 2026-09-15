@@ -13,6 +13,10 @@ DocumentBuilder.cs
 CompanyLogo.cs
 CashBook.cs
 EstimateArchive.cs
+Warehouse.cs
+SqlCustomers.cs
+Receipt.cs
+Customers.cs
 SqlCashBook.cs
 SqlEstimateArchive.cs
 PriceBook.cs

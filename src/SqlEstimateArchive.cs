@@ -44,7 +44,22 @@ namespace KotovCalc
                     discount numeric(5,2) NOT NULL DEFAULT 0,
                     items jsonb NOT NULL DEFAULT '[]'::jsonb)";
 
-            return client.Execute(command) ? null : client.LastError;
+            if (!client.Execute(command)) return client.LastError;
+
+            // колонки, добавленные после первой версии
+            string[] later = new string[]
+            {
+                "ALTER TABLE smeta_estimates ADD COLUMN IF NOT EXISTS customer_id text NOT NULL DEFAULT ''",
+                "ALTER TABLE smeta_estimates ADD COLUMN IF NOT EXISTS customer_phone text NOT NULL DEFAULT ''",
+                "ALTER TABLE smeta_estimates ADD COLUMN IF NOT EXISTS car text NOT NULL DEFAULT ''",
+                "ALTER TABLE smeta_estimates ADD COLUMN IF NOT EXISTS plate text NOT NULL DEFAULT ''",
+                "ALTER TABLE smeta_estimates ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'новая'"
+            };
+
+            foreach (string command2 in later)
+                if (!client.Execute(command2)) return client.LastError;
+
+            return null;
         }
 
         /// <summary>Следующий номер заявки в рамках года берётся из базы.</summary>
@@ -80,7 +95,8 @@ namespace KotovCalc
 
                 List<PgRow> rows = client.Query(
                     "SELECT number, year, sequence, to_char(saved, 'YYYY-MM-DD HH24:MI:SS') AS saved_at, " +
-                    "customer, discount, items::text AS items FROM smeta_estimates " +
+                    "customer, customer_id, customer_phone, car, plate, status, " +
+                    "discount, items::text AS items FROM smeta_estimates " +
                     "ORDER BY year DESC, sequence DESC");
 
                 if (rows == null) throw new PgException(client.LastError);
@@ -92,6 +108,11 @@ namespace KotovCalc
                     estimate.Year = (int)Number(row["year"]);
                     estimate.Sequence = (int)Number(row["sequence"]);
                     estimate.Customer = Text(row["customer"]);
+                    estimate.CustomerId = Text(row["customer_id"]);
+                    estimate.CustomerPhone = Text(row["customer_phone"]);
+                    estimate.Car = Text(row["car"]);
+                    estimate.Plate = Text(row["plate"]);
+                    estimate.Status = EstimateStatuses.Parse(Text(row["status"]));
                     estimate.Discount = AppSettings.ClampDiscount(Number(row["discount"]));
 
                     DateTime saved;
@@ -111,6 +132,7 @@ namespace KotovCalc
                         item.Unit = SimpleJson.Text(map, "unit");
                         item.Quantity = SimpleJson.Number(map, "quantity", 1m);
                         item.Price = SimpleJson.Number(map, "price", 0m);
+                        item.Cost = SimpleJson.Number(map, "cost", 0m);
 
                         if (item.Name.Length == 0) continue;
                         if (item.Quantity <= 0m) item.Quantity = 1m;
@@ -133,16 +155,24 @@ namespace KotovCalc
                 if (error != null) throw new PgException(error);
 
                 bool ok = client.Execute(
-                    @"INSERT INTO smeta_estimates (number, year, sequence, saved, customer, discount, items)
-                      VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+                    @"INSERT INTO smeta_estimates (number, year, sequence, saved, customer, customer_id,
+                        customer_phone, car, plate, status, discount, items)
+                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
                       ON CONFLICT (number) DO UPDATE SET
                         saved = EXCLUDED.saved,
                         customer = EXCLUDED.customer,
+                        customer_id = EXCLUDED.customer_id,
+                        customer_phone = EXCLUDED.customer_phone,
+                        car = EXCLUDED.car,
+                        plate = EXCLUDED.plate,
+                        status = EXCLUDED.status,
                         discount = EXCLUDED.discount,
                         items = EXCLUDED.items",
                     estimate.Number, estimate.Year, estimate.Sequence,
                     estimate.Saved.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                    estimate.Customer ?? "", estimate.Discount, ItemsJson(estimate));
+                    estimate.Customer ?? "", estimate.CustomerId ?? "", estimate.CustomerPhone ?? "",
+                    estimate.Car ?? "", estimate.Plate ?? "",
+                    EstimateStatuses.Title(estimate.Status), estimate.Discount, ItemsJson(estimate));
 
                 if (!ok) throw new PgException(client.LastError ?? "Не удалось сохранить заявку.");
             }
@@ -171,6 +201,7 @@ namespace KotovCalc
                 map["unit"] = item.Unit ?? "";
                 map["quantity"] = item.Quantity;
                 map["price"] = item.Price;
+                map["cost"] = item.Cost;
                 items.Add(map);
             }
 

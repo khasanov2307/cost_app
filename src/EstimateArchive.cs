@@ -18,6 +18,43 @@ using System.Text;
 namespace KotovCalc
 {
     /// <summary>Позиция сохранённой заявки.</summary>
+    /// <summary>Состояние заявки в работе.</summary>
+    internal enum EstimateStatus
+    {
+        New = 0,            // новая
+        Work = 1,           // в работе
+        Done = 2,           // выполнена
+        Paid = 3            // оплачена
+    }
+
+    internal static class EstimateStatuses
+    {
+        public static string Title(EstimateStatus status)
+        {
+            switch (status)
+            {
+                case EstimateStatus.Work: return "в работе";
+                case EstimateStatus.Done: return "выполнена";
+                case EstimateStatus.Paid: return "оплачена";
+                default: return "новая";
+            }
+        }
+
+        public static string[] List
+        {
+            get { return new string[] { "новая", "в работе", "выполнена", "оплачена" }; }
+        }
+
+        public static EstimateStatus Parse(string title)
+        {
+            if (string.IsNullOrEmpty(title)) return EstimateStatus.New;
+            if (title.StartsWith("в работе", StringComparison.CurrentCultureIgnoreCase)) return EstimateStatus.Work;
+            if (title.StartsWith("выполн", StringComparison.CurrentCultureIgnoreCase)) return EstimateStatus.Done;
+            if (title.StartsWith("оплач", StringComparison.CurrentCultureIgnoreCase)) return EstimateStatus.Paid;
+            return EstimateStatus.New;
+        }
+    }
+
     internal sealed class EstimateItem
     {
         public string Group = "";
@@ -26,6 +63,7 @@ namespace KotovCalc
         public string Unit = "";
         public decimal Quantity = 1m;
         public decimal Price;
+        public decimal Cost;                // закупочная цена на момент заявки
     }
 
     /// <summary>Сохранённая заявока.</summary>
@@ -37,6 +75,11 @@ namespace KotovCalc
         public DateTime Saved = DateTime.Now;
         public string Customer = "";
         public decimal Discount;
+        public string CustomerId = "";        // карточка заказчика, если выбрана из справочника
+        public string CustomerPhone = "";     // телефон заказчика
+        public string Car = "";               // автомобиль
+        public string Plate = "";             // госномер
+        public EstimateStatus Status = EstimateStatus.New;   // состояние заявки
         public List<EstimateItem> Items = new List<EstimateItem>();
 
         /// <summary>Сумма к оплате с учётом скидки.</summary>
@@ -224,6 +267,11 @@ namespace KotovCalc
             root["sequence"] = estimate.Sequence;
             root["saved"] = estimate.Saved.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
             root["customer"] = estimate.Customer;
+            root["customer_id"] = estimate.CustomerId;
+            root["customer_phone"] = estimate.CustomerPhone;
+            root["car"] = estimate.Car;
+            root["plate"] = estimate.Plate;
+            root["status"] = EstimateStatuses.Title(estimate.Status);
             root["discount"] = estimate.Discount;
 
             List<object> items = new List<object>();
@@ -236,6 +284,7 @@ namespace KotovCalc
                 map["unit"] = item.Unit;
                 map["quantity"] = item.Quantity;
                 map["price"] = item.Price;
+                map["cost"] = item.Cost;
                 items.Add(map);
             }
             root["items"] = items;
@@ -254,6 +303,11 @@ namespace KotovCalc
             estimate.Year = (int)SimpleJson.Number(root, "year", 0m);
             estimate.Sequence = (int)SimpleJson.Number(root, "sequence", 0m);
             estimate.Customer = SimpleJson.Text(root, "customer");
+            estimate.CustomerId = SimpleJson.Text(root, "customer_id");
+            estimate.CustomerPhone = SimpleJson.Text(root, "customer_phone");
+            estimate.Car = SimpleJson.Text(root, "car");
+            estimate.Plate = SimpleJson.Text(root, "plate");
+            estimate.Status = EstimateStatuses.Parse(SimpleJson.Text(root, "status"));
             estimate.Discount = AppSettings.ClampDiscount(SimpleJson.Number(root, "discount", 0m));
 
             DateTime saved;
@@ -284,6 +338,7 @@ namespace KotovCalc
                 item.Unit = SimpleJson.Text(map, "unit");
                 item.Quantity = SimpleJson.Number(map, "quantity", 1m);
                 item.Price = SimpleJson.Number(map, "price", 0m);
+                item.Cost = SimpleJson.Number(map, "cost", 0m);
 
                 if (item.Name.Length == 0) continue;
                 if (item.Quantity <= 0m) item.Quantity = 1m;

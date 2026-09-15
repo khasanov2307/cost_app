@@ -78,6 +78,8 @@ namespace KotovCalc
         public string Name = "";
         public string Unit = "шт.";
         public decimal Price;
+        public decimal Cost;                // закупочная цена за единицу
+        public decimal MinStock;            // минимальный остаток для предупреждения
 
         public ServiceItem() { }
 
