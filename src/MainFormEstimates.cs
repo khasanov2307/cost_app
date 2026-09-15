@@ -95,7 +95,11 @@ namespace KotovCalc
         /// Новая заявка: снимаются все отметки, количества и правки цен,
         /// номер и заказчик очищаются. Так программа выглядит при запуске.
         /// </summary>
-        private void StartNewEstimate()
+        /// <summary>
+        /// Новая заявка: снимаются отметки, количества и правки цен.
+        /// clearFields — очищать ли номер, заказчика и скидку (при запуске — да).
+        /// </summary>
+        private void StartNewEstimate(bool clearFields)
         {
             _restoring = true;
             try
@@ -107,14 +111,17 @@ namespace KotovCalc
                     row.PriceOverride = null;
                 }
 
-                _fields.Number = "";
-                _fields.Customer = "";
-                _fields.Discount = 0m;
-                _fields.Normalize();
+                if (clearFields)
+                {
+                    _fields.Number = "";
+                    _fields.Customer = "";
+                    _fields.Discount = 0m;
+                    _fields.Normalize();
 
-                if (_numberBox != null) _numberBox.Text = "";
-                if (_customerBox != null) _customerBox.Text = "";
-                if (_discountBox != null) _discountBox.Value = 0m;
+                    if (_numberBox != null) _numberBox.Text = "";
+                    if (_customerBox != null) _customerBox.Text = "";
+                    if (_discountBox != null) _discountBox.Value = 0m;
+                }
             }
             finally
             {
@@ -220,7 +227,7 @@ namespace KotovCalc
 
             while (true)
             {
-                using (EstimateListForm dialog = new EstimateListForm(saved, ConnectionSettings.Archive.Title))
+                using (EstimateListForm dialog = new EstimateListForm(saved, ConnectionSettings.Archive.Title, Cash()))
                 {
                     if (dialog.ShowDialog(this) != DialogResult.OK) return;
 

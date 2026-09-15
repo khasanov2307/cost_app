@@ -79,9 +79,8 @@ namespace KotovCalc
             if (number.Length == 0)
             {
                 MessageBox.Show(this,
-                    "Сначала укажите номер заявки: оплата записывается по номеру.\n\n" +
-                    "Номер присваивается автоматически при сохранении заявки.",
-                    "Оплата заявки", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    "Сначала отметьте услуги: заявка сохранится автоматически, затем её можно оплатить.",
+                    "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -109,13 +108,18 @@ namespace KotovCalc
                 cash.AddPayment(dialog.Result);
                 SaveCash();
 
-                SetStatus("Оплата по заявке № " + number + ": " +
-                          PaymentKinds.Title(dialog.Result.Kind) + " " +
-                          Fmt.Money(dialog.Result.Total) + " \u20BD" +
-                          "   •   касса: " + dialog.Result.Desk +
-                          (dialog.Result.Remaining > 0m
-                              ? "   •   осталось доплатить: " + Fmt.Money(dialog.Result.Remaining) + " \u20BD"
-                              : ""));
+                string message = "Оплата по заявке № " + number + ": " +
+                                 PaymentKinds.Title(dialog.Result.Kind) + " " +
+                                 Fmt.Money(dialog.Result.Total) + " \u20BD" +
+                                 "   •   касса: " + dialog.Result.Desk;
+
+                if (dialog.Result.Remaining > 0m)
+                    message += "   •   осталось доплатить: " + Fmt.Money(dialog.Result.Remaining) + " \u20BD";
+
+                // после оплаты заявка закрыта: отметки снимаются, программа готова к следующей
+                StartNewEstimate(false);
+
+                SetStatus(message + "   •   заявка оплачена, можно оформлять следующую.");
             }
         }
 
@@ -124,6 +128,7 @@ namespace KotovCalc
         /// <summary>Справочник касс с балансами.</summary>
         private void OpenCashDesks()
         {
+            _cashLoaded = false;
             CashBook cash = Cash();
 
             using (CashDeskForm dialog = new CashDeskForm(cash, ConnectionSettings.CashBook))
@@ -143,6 +148,7 @@ namespace KotovCalc
         /// <summary>Панель показателей.</summary>
         private void OpenDashboard()
         {
+            _cashLoaded = false;
             List<SavedEstimate> estimates;
 
             try

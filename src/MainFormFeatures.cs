@@ -41,7 +41,6 @@ namespace KotovCalc
         private Label _subtotalLabel;
         private Button _btnTheme;
         private Button _btnPreview;
-        private Button _btnLogo;
         private Image _logoIcon;            // значок логотипа для нижней панели
         private WebService _web;                   // сервис для веб-версии
 
@@ -147,37 +146,8 @@ namespace KotovCalc
             _btnTheme.Click += delegate { ToggleTheme(); };
             bottom.Controls.Add(_btnTheme);
 
-            // оплата, кассы и показатели
-            Button btnPayment = MakeButton("Оплата заявки", 158);
-            btnPayment.Location = new Point(14, 46);
-            btnPayment.Click += delegate { RegisterPayment(); };
-            bottom.Controls.Add(btnPayment);
 
-            Button btnDesks = MakeButton("Кассы", 110);
-            btnDesks.Location = new Point(180, 46);
-            btnDesks.Click += delegate { OpenCashDesks(); };
-            bottom.Controls.Add(btnDesks);
 
-            Button btnDashboard = MakeButton("Показатели", 132);
-            btnDashboard.Location = new Point(298, 46);
-            btnDashboard.Click += delegate { OpenDashboard(); };
-            bottom.Controls.Add(btnDashboard);
-
-            // заявки: сохранение и открытие
-            Button btnSaveEstimate = MakeButton("Сохранить заявку", 168);
-            btnSaveEstimate.Location = new Point(14, 80);
-            btnSaveEstimate.Click += delegate { SaveEstimate(); };
-            bottom.Controls.Add(btnSaveEstimate);
-
-            Button btnOpenEstimate = MakeButton("Открыть заявку", 158);
-            btnOpenEstimate.Location = new Point(190, 80);
-            btnOpenEstimate.Click += delegate { OpenEstimate(); };
-            bottom.Controls.Add(btnOpenEstimate);
-
-            // логотип компании: кнопка выбора и значок подтверждения
-            _btnLogo = MakeButton("Логотип…", 118);
-            _btnLogo.Click += delegate { ChooseLogo(); };
-            bottom.Controls.Add(_btnLogo);
 
             _subtotalLabel = new Label();
             _subtotalLabel.AutoSize = true;
@@ -551,8 +521,8 @@ namespace KotovCalc
         private void ShowLogo()
         {
             bool hasLogo = !string.IsNullOrEmpty(_settings.Logo);
-            _btnLogo.Text = hasLogo ? "Сменить логотип" : "Логотип…";
-            _btnLogo.Width = hasLogo ? 168 : 118;
+            string logoTitle = hasLogo ? "Сменить логотип компании…" : "Логотип компании…";
+
 
             if (_logoIcon != null)
             {
@@ -579,7 +549,7 @@ namespace KotovCalc
                 }
             }
 
-            if (_btnLogo.Parent != null) _btnLogo.Parent.Invalidate();
+
         }
 
         /// <summary>Значок для нижней панели: уменьшенная копия логотипа.</summary>
@@ -771,6 +741,11 @@ namespace KotovCalc
         {
             ContextMenuStrip menu = new ContextMenuStrip();
             menu.Items.Add("Подключение к базе данных…", null, delegate { OpenConnectionSettings(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Логотип компании…", null, delegate { ChooseLogo(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Кассы и балансы…", null, delegate { OpenCashDesks(); });
+            menu.Items.Add("Показатели…", null, delegate { OpenDashboard(); });
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Выгрузить все данные…", null, delegate { ExportData(); });
             menu.Items.Add("Загрузить данные…", null, delegate { ImportData(); });

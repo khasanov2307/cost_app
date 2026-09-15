@@ -122,7 +122,7 @@ namespace KotovCalc
             // --- нижняя панель с итогом и кнопками (докbуем первой) ---
             Panel bottom = new Panel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 236;
+            bottom.Height = 200;
             bottom.Paint += delegate(object s, PaintEventArgs e)
             {
                 using (Pen pen = new Pen(Splitter))
@@ -133,7 +133,7 @@ namespace KotovCalc
             _totalLabel.AutoSize = true;
             _totalLabel.Font = _totalFont;
             _totalLabel.ForeColor = Color.FromArgb(20, 70, 130);
-            _totalLabel.Location = new Point(14, 178);
+            _totalLabel.Location = new Point(14, 156);
             _totalLabel.Text = "ИТОГО: 0,00 \u20BD";
             bottom.Controls.Add(_totalLabel);
 
@@ -216,29 +216,47 @@ namespace KotovCalc
 
             _grid.BringToFront();
 
-            // Кнопки прижимаем к правому краю без переноса:
-            // слева остаётся место для итога, счётчика позиций и подытога со скидкой.
+            // Кнопки расставляются по правому краю панели:
+            // верхняя строка — предпросмотр, копирование, сброс, формирование;
+            // под «Сформировать» — «Оплата»;
+            // ещё ниже правый край занимают «Сохранить заявку» и «Открыть заявку».
             _btnPreview = MakeButton("Предпросмотр", 150);
             _btnPreview.Click += delegate { ShowPreview(); };
             bottom.Controls.Add(_btnPreview);
-            // кнопки уже добавлены в нижнюю панель при её создании,
-            // поэтому здесь только расставляем их по правому краю
-            Button[] actionButtons = new Button[] { _btnPreview, btnCopy, btnReset, _btnLogo };
+
+            Button btnPayment = MakeButton("Оплата", 150);
+            btnPayment.Click += delegate { RegisterPayment(); };
+            bottom.Controls.Add(btnPayment);
+
+            Button btnSaveEstimate = MakeButton("Сохранить заявку", 168);
+            btnSaveEstimate.Click += delegate { SaveEstimate(); };
+            bottom.Controls.Add(btnSaveEstimate);
+
+            Button btnOpenEstimate = MakeButton("Открыть заявку", 158);
+            btnOpenEstimate.Click += delegate { OpenEstimate(); };
+            bottom.Controls.Add(btnOpenEstimate);
 
             EventHandler placeActions = delegate
             {
                 int right = bottom.ClientSize.Width - 14;
-                _btnGenerate.Location = new Point(right - _btnGenerate.Width, 112);
-                right -= _btnGenerate.Width + 8;
-                _btnPreview.Location = new Point(right - _btnPreview.Width, 112);
-                right -= _btnPreview.Width + 8;
-                btnCopy.Location = new Point(right - btnCopy.Width, 112);
-                right -= btnCopy.Width + 8;
-                btnReset.Location = new Point(right - btnReset.Width, 112);
-                right -= btnReset.Width + 8;
-                _btnLogo.Location = new Point(right - _btnLogo.Width, 112);
 
-                LayoutBottomLabels();
+                // верхняя строка
+                _btnGenerate.Location = new Point(right - _btnGenerate.Width, 46);
+                right -= _btnGenerate.Width + 8;
+                _btnPreview.Location = new Point(right - _btnPreview.Width, 46);
+                right -= _btnPreview.Width + 8;
+                btnCopy.Location = new Point(right - btnCopy.Width, 46);
+                right -= btnCopy.Width + 8;
+                btnReset.Location = new Point(right - btnReset.Width, 46);
+
+                // «Оплата» — под кнопкой «Сформировать»
+                btnPayment.Location = new Point(bottom.ClientSize.Width - 14 - btnPayment.Width, 80);
+
+                // заявки — справа, на уровне «Данные» и «Темная»
+                int estimateRight = bottom.ClientSize.Width - 14;
+                btnOpenEstimate.Location = new Point(estimateRight - btnOpenEstimate.Width, 10);
+                estimateRight -= btnOpenEstimate.Width + 8;
+                btnSaveEstimate.Location = new Point(estimateRight - btnSaveEstimate.Width, 10);
 
                 LayoutBottomLabels();
             };
@@ -387,7 +405,7 @@ namespace KotovCalc
 
             // при запуске программа всегда начинает новую заявку:
             // отметки, количества и цены прошлого раза не восстанавливаются
-            if (firstRun) StartNewEstimate();
+            if (firstRun) StartNewEstimate(true);
 
             RebuildGrid();
         }
@@ -803,7 +821,7 @@ namespace KotovCalc
             _totalLabel.Size = new Size(totalWidth, totalSize.Height);
             _totalLabel.AutoEllipsis = true;
 
-            _countLabel.Location = new Point(14, 168);
+            _countLabel.Location = new Point(14, 128);
             _countLabel.AutoSize = false;
             _countLabel.Size = new Size(Math.Max(200, panelWidth - 780), 20);
             _countLabel.AutoEllipsis = true;
