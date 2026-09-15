@@ -2,6 +2,7 @@ Kotov.cs
 SimpleJson.cs
 AppSettings.cs
 DataExchange.cs
+PgClient.cs
 DocumentBuilder.cs
 CompanyLogo.cs
 PriceBook.cs
