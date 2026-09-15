@@ -1,5 +1,8 @@
 // ---------------------------------------------------------------------------
 //  Оплата заявки, кассы и панель показателей в главном окне.
+//
+//  При открытии формы оплаты заявка НЕ сохраняется: программа только подбирает
+//  номер. Запись в архив происходит после подтверждения оплаты.
 // ---------------------------------------------------------------------------
 
 using System;
@@ -52,47 +55,43 @@ namespace KotovCalc
 
         // ------------------------------------------------------------- оплата
 
-        /// <summary>Фиксация оплаты по текущей заявке.</summary>
+        /// <summary>
+        /// Оплата текущей заявки. Заявка записывается в архив только после того,
+        /// как оплата подтверждена в окне оплаты.
+        /// </summary>
         private void RegisterPayment()
         {
-            // оплата фиксируется по сохранённой заявке: если её ещё нет, сохраняем сейчас
-            if (CountPicked() > 0)
-            {
-                try
-                {
-                    SavedEstimate savedNow = SaveCurrentEstimate();
-
-                    if (savedNow != null)
-                        SetStatus("Заявка сохранена перед оплатой: № " + savedNow.Number +
-                                  "   •   позиций: " + savedNow.Items.Count +
-                                  "   •   на сумму: " + Fmt.Money(savedNow.Total));
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(this, "Не удалось сохранить заявку перед оплатой:\n" + ex.Message,
-                        "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-            }
-
-            string number = _fields.Number.Trim();
-
-            if (number.Length == 0)
+            if (CountPicked() == 0)
             {
                 MessageBox.Show(this,
-                    "Сначала отметьте услуги: заявка сохранится автоматически, затем её можно оплатить.",
+                    "Отметьте услуги — оплата записывается по заявке с позициями.",
                     "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             CashBook cash = Cash();
+
+            // номер подбираем заранее, чтобы показать его в окне оплаты,
+            // но заявку при этом не сохраняем
+            string number;
+
+            try
+            {
+                string wanted = _fields.Number.Trim();
+                number = UniqueEstimateNumber(wanted.Length > 0 ? wanted : NextEstimateNumber());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Не удалось определить номер заявки:\n" + ex.Message,
+                    "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             Payment existing = cash.FindPayment(number);
 
             decimal due = 0m;
             foreach (EstimateRow row in _rows)
                 if (row.Selected && row.Quantity > 0m) due += row.Sum;
-
-            if (due <= 0m && existing != null) due = existing.Due;
 
             if (due <= 0m)
             {
@@ -102,26 +101,54 @@ namespace KotovCalc
                 return;
             }
 
+            Payment result;
+
             using (PaymentForm dialog = new PaymentForm(cash, number, _fields.Customer, due, existing))
             {
                 if (dialog.ShowDialog(this) != DialogResult.OK) return;
-
-                cash.AddPayment(dialog.Result);
-                SaveCash();
-
-                string message = "Оплата по заявке № " + number + ": " +
-                                 PaymentKinds.Title(dialog.Result.Kind) + " " +
-                                 Fmt.Money(dialog.Result.Total) +
-                                 "   •   касса: " + dialog.Result.DeskTitle;
-
-                if (dialog.Result.Remaining > 0m)
-                    message += "   •   осталось доплатить: " + Fmt.Money(dialog.Result.Remaining);
-
-                // после оплаты заявка закрыта: отметки снимаются, программа готова к следующей
-                StartNewEstimate(false);
-
-                SetStatus(message + "   •   заявка оплачена, можно оформлять следующую.");
+                result = dialog.Result;
             }
+
+            // оплата подтверждена: сначала сохраняем заявку, затем записываем оплату
+            SavedEstimate estimate;
+
+            try
+            {
+                _fields.Number = number;
+                estimate = SaveCurrentEstimate();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Оплата не записана: не удалось сохранить заявку.\n\n" + ex.Message,
+                    "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (estimate == null)
+            {
+                MessageBox.Show(this, "Оплата не записана: заявка пуста.",
+                    "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // номер мог измениться, если его успели занять
+            result.Number = estimate.Number;
+            cash.AddPayment(result);
+            SaveCash();
+
+            string message = "Оплата по заявке № " + estimate.Number + ": " +
+                             PaymentKinds.Title(result.Kind) + " " + Fmt.Money(result.Total) +
+                             "   •   касса: " + result.DeskTitle;
+
+            if (result.Remaining > 0m)
+                message += "   •   осталось доплатить: " + Fmt.Money(result.Remaining);
+
+            message += "   •   заявка сохранена, позиций: " + estimate.Items.Count;
+
+            // после оплаты заявка закрыта: отметки снимаются, программа готова к следующей
+            StartNewEstimate(false);
+
+            SetStatus(message + "   •   можно оформлять следующую.");
         }
 
         // -------------------------------------------------------------- кассы
@@ -143,7 +170,7 @@ namespace KotovCalc
             foreach (CashDesk desk in Cash().Desks) total += _cash.Balance(desk.Name);
 
             SetStatus("Касс: " + _cash.Desks.Count + "   •   денег во всех кассах: " +
-                      Fmt.Money(total) + " \u20BD   •   оплат: " + _cash.Payments.Count);
+                      Fmt.Money(total) + "   •   оплат: " + _cash.Payments.Count);
         }
 
         // -------------------------------------------------------- показатели

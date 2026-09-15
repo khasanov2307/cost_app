@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 #  Builds and runs the automated checks for the service calculator.
 #  Pure ASCII on purpose (Windows PowerShell 5.1, any console code page).
 # =============================================================================
@@ -21,6 +21,7 @@ $out6 = Join-Path $test 'Harness6.exe'
 $out7 = Join-Path $test 'Harness8.exe'
 $out8 = Join-Path $test 'Harness9.exe'
 $outPay = Join-Path $test 'PaymentProbe.exe'
+$outFlow = Join-Path $test 'PayFlowProbe.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
 $csc = @(
@@ -77,6 +78,10 @@ Write-Host '==> Compiling the service host' -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 
+
+Write-Host '==> Compiling the payment order checks' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:PayFlowProbe "/out:$outFlow" $sourceList `
+    (Join-Path $test 'PayFlowProbe.cs')
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 Write-Host '==> Compiling the form checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:PaymentProbe "/out:$outPay" $sourceList `
@@ -152,6 +157,10 @@ else {
 Write-Host '==> Checking the payment window' -ForegroundColor Cyan
 & $outPay
 if ($LASTEXITCODE -ne 0) { throw "Form checks failed with exit code $LASTEXITCODE" }
+
+Write-Host '==> Checking the payment order' -ForegroundColor Cyan
+& $outFlow
+if ($LASTEXITCODE -ne 0) { throw "Payment order checks failed with exit code $LASTEXITCODE" }
 }
     $probe.Connect("127.0.0.1", 5432)
     $probe.Close()

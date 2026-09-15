@@ -146,7 +146,7 @@ namespace KotovCalc
 
         private void BuildInterface()
         {
-            Text = "Каталог номенклатуры — Заявки на расчет";
+            Text = "Каталог номенклатуры — Расчет заявки";
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(940, 560);
             ClientSize = new Size(1040, 660);

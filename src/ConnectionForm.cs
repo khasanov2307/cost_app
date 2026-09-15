@@ -49,7 +49,7 @@ namespace KotovCalc
 
         private void Build()
         {
-            Text = "Подключение — Заявки на расчет";
+            Text = "Подключение — Расчет заявки";
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -324,7 +324,7 @@ namespace KotovCalc
 
         private void Build()
         {
-            Text = _createFirst ? "Создание пользователя — Заявки на расчет" : "Вход — Заявки на расчет";
+            Text = _createFirst ? "Создание пользователя — Расчет заявки" : "Вход — Расчет заявки";
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;

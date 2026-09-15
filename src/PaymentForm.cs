@@ -392,7 +392,7 @@ namespace KotovCalc
             _cash = cash ?? new CashBook();
             _store = store;
 
-            Text = "Кассы — Заявки на расчет";
+            Text = "Кассы — Расчет заявки";
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(700, 420);
             ClientSize = new Size(820, 480);

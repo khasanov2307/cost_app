@@ -113,7 +113,8 @@ namespace KotovCalc
 
         private void BuildInterface()
         {
-            Text = "Заявки на расчет";
+            Text = "Расчет заявки";
+            ApplyAppIcon();
             StartPosition = FormStartPosition.CenterScreen;
             MinimumSize = new Size(1000, 620);
             ClientSize = new Size(1120, 740);
@@ -803,6 +804,21 @@ namespace KotovCalc
         /// Подписи слева в нижней панели: итог, счётчик позиций и подытог со скидкой.
         /// Кнопки занимают правую часть панели, поэтому ширина подписей ограничена.
         /// </summary>
+        /// <summary>Значок окна — тот же, что у файла программы.</summary>
+        private void ApplyAppIcon()
+        {
+            try
+            {
+                using (System.IO.Stream stream = GetType().Assembly
+                           .GetManifestResourceStream("KotovCalc.App.ico"))
+                {
+                    if (stream != null) Icon = new Icon(stream);
+                }
+            }
+            catch { /* значок не критичен: без него окно всё равно работает */ }
+        }
+
+
         private void LayoutBottomLabels()
         {
             if (_totalLabel == null) return;
@@ -1240,3 +1256,4 @@ namespace KotovCalc
         }
     }
 }
+

@@ -22,7 +22,7 @@ $ErrorActionPreference = 'Stop'
 $root    = Split-Path -Parent $MyInvocation.MyCommand.Path
 $srcDir  = Join-Path $root 'src'
 $outDir  = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $root 'bin' }
-$exeName = ([char]0x0420 + [char]0x0430 + [char]0x0441 + [char]0x0447 + [char]0x0435 + [char]0x0442 + '_' + [char]0x0441 + [char]0x043C + [char]0x0435 + [char]0x0442 + [char]0x044B + '.exe')
+$exeName = ([char]0x0420 + [char]0x0430 + [char]0x0441 + [char]0x0447 + [char]0x0435 + [char]0x0442 + '_' + [char]0x0417 + [char]0x0430 + [char]0x044F + [char]0x0432 + [char]0x043A + [char]0x0438 + '.exe')
 $seedName = ([char]0x0426 + [char]0x0435 + [char]0x043D + [char]0x044B + '_' + [char]0x0443 + [char]0x0441 + [char]0x043B + [char]0x0443 + [char]0x0433 + '.tsv')
 $exePath  = Join-Path $outDir $exeName
 $seedSrc  = Join-Path $root $seedName
@@ -88,6 +88,7 @@ $arguments.Add("/out:$exePath")
 $arguments.Add("/resource:$seedTemp,KotovCalc.Seed.tsv")
 if (Test-Path -LiteralPath $iconPath) {
     $arguments.Add("/win32icon:$iconPath")
+    $arguments.Add("/resource:$iconPath,KotovCalc.App.ico")
     Write-Host "    icon: $iconPath"
 }
 $arguments.AddRange([string[]]$sources)

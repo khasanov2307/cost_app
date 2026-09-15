@@ -24,4 +24,9 @@ desktop.ini
 prices.xml
 templates.json
 settings.ini
-
+tests/IconCheck.cs
+tests/IconShot.cs
+tests/icon-preview.png
+tests/icon-from-exe.png
+tests/PayFlowProbe.exe
+tests/RenderForms.exe

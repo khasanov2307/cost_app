@@ -34,7 +34,7 @@ namespace KotovCalc
             _cash = cash ?? new CashBook();
             _estimates = estimates ?? new List<SavedEstimate>();
 
-            Text = "Показатели — Заявки на расчет";
+            Text = "Показатели — Расчет заявки";
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(860, 560);
             ClientSize = new Size(940, 640);
