@@ -22,6 +22,7 @@ $out7 = Join-Path $test 'Harness8.exe'
 $out8 = Join-Path $test 'Harness9.exe'
 $outPay = Join-Path $test 'PaymentProbe.exe'
 $outFlow = Join-Path $test 'PayFlowProbe.exe'
+$outFilter = Join-Path $test 'FilterProbe.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
 $csc = @(
@@ -78,6 +79,11 @@ Write-Host '==> Compiling the service host' -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 
+
+Write-Host '==> Compiling the selection filter checks' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:FilterProbe "/out:$outFilter" $sourceList `
+    (Join-Path $test 'FilterProbe.cs')
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 Write-Host '==> Compiling the payment order checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:PayFlowProbe "/out:$outFlow" $sourceList `
@@ -161,6 +167,10 @@ if ($LASTEXITCODE -ne 0) { throw "Form checks failed with exit code $LASTEXITCOD
 Write-Host '==> Checking the payment order' -ForegroundColor Cyan
 & $outFlow
 if ($LASTEXITCODE -ne 0) { throw "Payment order checks failed with exit code $LASTEXITCODE" }
+
+Write-Host '==> Checking the selection filter' -ForegroundColor Cyan
+& $outFilter
+if ($LASTEXITCODE -ne 0) { throw "Selection filter checks failed with exit code $LASTEXITCODE" }
 }
     $probe.Connect("127.0.0.1", 5432)
     $probe.Close()

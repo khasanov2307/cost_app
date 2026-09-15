@@ -141,6 +141,13 @@ namespace KotovCalc
             btnData.Click += delegate { DataMenu(); };
             bottom.Controls.Add(btnData);
 
+            // показ только отмеченных позиций — кнопка над таблицей
+            _btnOnlySelected = MakeButton("Показать только выбранные", 230);
+            _btnOnlySelected.FlatStyle = FlatStyle.System;
+            _btnOnlySelected.Click += delegate { ToggleOnlySelected(); };
+            top.Controls.Add(_btnOnlySelected);
+
+
             _btnTheme = MakeButton("Тёмная", 100);
             _btnTheme.Location = new Point(132, 10);
             _btnTheme.Click += delegate { ToggleTheme(); };

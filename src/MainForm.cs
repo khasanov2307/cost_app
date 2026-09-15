@@ -24,6 +24,8 @@ namespace KotovCalc
 
         private readonly List<ServiceItem> _catalog = new List<ServiceItem>();
         private readonly List<EstimateRow> _rows = new List<EstimateRow>();
+        private Button _btnOnlySelected;         // показ только отмеченных позиций
+        private bool _onlySelected;              // показывать только отмеченные позиции
         private readonly HashSet<string> _collapsed =
             new HashSet<string>(StringComparer.CurrentCultureIgnoreCase);
 
@@ -253,6 +255,9 @@ namespace KotovCalc
                 // «Оплата» — под кнопкой «Сформировать»
                 btnPayment.Location = new Point(bottom.ClientSize.Width - 14 - btnPayment.Width, 80);
 
+                // кнопка фильтра — над таблицей, в верхней панели
+                PlaceOnlySelectedButton();
+
                 // заявки — справа, на уровне «Данные» и «Темная»
                 int estimateRight = bottom.ClientSize.Width - 14;
                 btnOpenEstimate.Location = new Point(estimateRight - btnOpenEstimate.Width, 10);
@@ -262,6 +267,8 @@ namespace KotovCalc
                 LayoutBottomLabels();
             };
             bottom.Resize += placeActions;
+            if (_btnOnlySelected != null && _btnOnlySelected.Parent != null)
+                _btnOnlySelected.Parent.Resize += delegate { PlaceOnlySelectedButton(); };
             placeActions(null, EventArgs.Empty);
         }
 
@@ -644,7 +651,7 @@ namespace KotovCalc
                     DataGridViewRow gridRow = _grid.Rows[i];
                     if (gridRow.Tag is string) continue;             // заголовок группы
 
-                    if (!_filtering || Matches(gridRow, query))
+                    if (LimitOk(gridRow) && (!_filtering || Matches(gridRow, query)))
                         matching.Add(((EstimateRow)gridRow.Tag).Item.Group);
                 }
 
@@ -663,7 +670,8 @@ namespace KotovCalc
                     {
                         EstimateRow row = (EstimateRow)gridRow.Tag;
                         gridRow.Visible = matching.Contains(row.Item.Group)
-                                       && !_collapsed.Contains(row.Item.Group);
+                                       && !_collapsed.Contains(row.Item.Group)
+                                       && LimitOk(gridRow);
                     }
                 }
             }
@@ -686,6 +694,16 @@ namespace KotovCalc
             _grid.Invalidate();
         }
 
+        /// <summary>Подходит ли строка под режим «только выбранные».</summary>
+        private bool LimitOk(DataGridViewRow gridRow)
+        {
+            if (!_onlySelected) return true;
+
+            EstimateRow row = gridRow.Tag as EstimateRow;
+            return row != null && row.Selected;
+        }
+
+
         private static bool Matches(DataGridViewRow gridRow, string query)
         {
             string name = Convert.ToString(gridRow.Cells[ColName].Value);
@@ -702,6 +720,55 @@ namespace KotovCalc
                 if (row.Visible) return row;
             return null;
         }
+
+        /// <summary>Показ только отмеченных позиций: повторное нажатие отменяет фильтр.</summary>
+        /// <summary>Кнопка фильтра — в правом верхнем углу над таблицей.</summary>
+        private void PlaceOnlySelectedButton()
+        {
+            if (_btnOnlySelected == null) return;
+
+            Control parent = _btnOnlySelected.Parent;
+            if (parent == null) return;
+
+            _btnOnlySelected.Location = new Point(
+                Math.Max(14, parent.ClientSize.Width - _btnOnlySelected.Width - 8), 88);
+
+            UpdateOnlySelectedButton();
+        }
+
+        /// <summary>Вид кнопки: нажата, когда фильтр включён.</summary>
+        private void UpdateOnlySelectedButton()
+        {
+            if (_btnOnlySelected == null) return;
+
+            _btnOnlySelected.FlatStyle = _onlySelected ? FlatStyle.Standard : FlatStyle.System;
+            _btnOnlySelected.Font = new Font("Segoe UI", 9.75f,
+                _onlySelected ? FontStyle.Bold : FontStyle.Regular, GraphicsUnit.Point);
+            _btnOnlySelected.Text = _onlySelected
+                ? "Показаны только выбранные"
+                : "Показать только выбранные";
+            _btnOnlySelected.Refresh();
+        }
+
+
+        private void ToggleOnlySelected()
+        {
+            _onlySelected = !_onlySelected;
+
+            UpdateOnlySelectedButton();
+            ApplyFilter();
+
+            int shown = 0;
+            foreach (DataGridViewRow gridRow in _grid.Rows)
+                if (gridRow.Visible && gridRow.Tag is EstimateRow) shown++;
+
+            if (_onlySelected)
+                SetStatus("Показаны только отмеченные позиции: " + shown +
+                          ". Повторное нажатие вернёт весь каталог.");
+            else
+                SetStatus("Показан весь каталог: позиций " + shown + ".");
+        }
+
 
         /// <summary>Сворачивание и разворачивание группы по щелчку на её заголовке.</summary>
         private void ToggleGroup(string group)

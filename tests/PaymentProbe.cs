@@ -98,19 +98,30 @@ internal static class PaymentProbe
         if (!blocked) { Console.WriteLine("  ОШИБКА: переплата не запрещена"); problems++; }
         over.Dispose();
 
-        // --- наличные и безналичные одной суммой: касса для безналичных скрыта
+        // --- оплата только наличными: обе кассы на виду, но записывается одна
         PaymentForm one = new PaymentForm(cash, "3/2026", "ООО Ромашка", 2000m, null);
-        { Form shown = one; shown.ShowInTaskbar = false; shown.Opacity = 0; shown.Show(); Application.DoEvents(); }
+        {
+            Form shown = one;
+            shown.ShowInTaskbar = false;
+            shown.Opacity = 0;
+            shown.Show();
+            Application.DoEvents();
+        }
         ((ComboBox)Field(one, "_kind")).SelectedIndex = (int)PaymentKind.Cash;
         Set(one, "_cashBox", "2000");
         typeof(PaymentForm).GetMethod("UpdateSummary", Hidden).Invoke(one, null);
 
-        bool cashlessHidden = !((ComboBox)Field(one, "_cashlessDeskList")).Visible;
+        bool cashlessVisible = ((ComboBox)Field(one, "_cashlessDeskList")).Visible;
         bool cashVisible = ((ComboBox)Field(one, "_cashDeskList")).Visible;
         Console.WriteLine("при наличных: поле кассы видно " + cashVisible +
-                          ", поле кассы для безналичных видно " + !cashlessHidden);
+                          ", поле кассы для безналичных видно " + cashlessVisible);
 
-        if (!cashVisible || !cashlessHidden) { Console.WriteLine("  ОШИБКА: поля касс показаны неверно"); problems++; }
+        // касса должна быть на виду всегда: её выбирают до ввода суммы
+        if (!cashVisible || !cashlessVisible)
+        {
+            Console.WriteLine("  ОШИБКА: поля касс не видны");
+            problems++;
+        }
 
         typeof(PaymentForm).GetMethod("Accept", Hidden).Invoke(one, null);
         if (one.Result == null) { Console.WriteLine("  ОШИБКА: оплата наличными не сформирована"); problems++; }
