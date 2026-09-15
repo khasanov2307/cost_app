@@ -17,6 +17,7 @@ $out2 = Join-Path $test 'Harness2.exe'
 $out3 = Join-Path $test 'DocxCheck.exe'
 $out4 = Join-Path $test 'Harness3.exe'
 $out5 = Join-Path $test 'Harness4.exe'
+$out6 = Join-Path $test 'Harness6.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
 $csc = @(
@@ -67,6 +68,11 @@ Write-Host '==> Compiling the Word checks' -ForegroundColor Cyan
     (Join-Path $test 'DocxCheck.cs')
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
+    (Join-Path  'Harness6.cs')
+& $csc $commonArgs $commonRefs /main:Harness6 "/out:$out6" $sourceList `
+Write-Host '==> Compiling the store checks' -ForegroundColor Cyan
+
 Write-Host '==> Compiling the logo checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:Harness4 "/out:$out5" $sourceList `
     (Join-Path $test 'Harness4.cs')
@@ -107,6 +113,17 @@ Write-Host '==> Running the logo checks' -ForegroundColor Cyan
 & $out5
 $code = $LASTEXITCODE
 if ($code -ne 0) { throw "Checks failed with exit code $code" }
+
+Write-Host '==> Running the store checks' -ForegroundColor Cyan
+# проверки базы выполняются, если PostgreSQL отвечает на localhost
+$pgTest = Test-NetConnection -ComputerName 127.0.0.1 -Port 5432 -InformationLevel Quiet -WarningAction SilentlyContinue
+if ($pgTest) {
+    & $out6 127.0.0.1 smeta smeta smeta
+    $code = $LASTEXITCODE
+    if ($code -ne 0) { throw "Store checks failed with exit code $code" }
+} else {
+    Write-Host '    PostgreSQL недоступен - проверки хранилища в базе пропущены'
+}
 
 Write-Host ''
 Write-Host '==> Running the Word checks' -ForegroundColor Cyan

@@ -546,17 +546,60 @@ namespace KotovCalc
         }
 
         /// <summary>Подстановка значений вместо $1, $2, ...</summary>
+        /// <summary>
+        /// Подстановка значений вместо $1, $2, ... Идём по строке один раз слева
+        /// направо: иначе знак доллара в уже подставленном значении (например,
+        /// в записи хеша пароля) был бы принят за новый параметр.
+        /// </summary>
         public static string Format(string sql, object[] parameters)
         {
-            string result = sql;
+            StringBuilder result = new StringBuilder(sql.Length + 32);
+            int at = 0;
 
-            for (int i = parameters.Length; i >= 1; i--)
+            while (at < sql.Length)
             {
-                string marker = "$" + i.ToString(CultureInfo.InvariantCulture);
-                result = result.Replace(marker, Literal(parameters[i - 1]));
+                char symbol = sql[at];
+
+                if (symbol == '$' && at + 1 < sql.Length && char.IsDigit(sql[at + 1]))
+                {
+                    int start = at + 1;
+                    int end = start;
+                    while (end < sql.Length && char.IsDigit(sql[end])) end++;
+
+                    int index;
+                    if (int.TryParse(sql.Substring(start, end - start), NumberStyles.Integer,
+                            CultureInfo.InvariantCulture, out index) &&
+                        index >= 1 && index <= parameters.Length)
+                    {
+                        result.Append(Literal(parameters[index - 1]));
+                        at = end;
+                        continue;
+                    }
+                }
+                else if (symbol == '\'')
+                {
+                    // строковый литерал переносим целиком, чтобы не трогать его содержимое
+                    int end = at + 1;
+                    while (end < sql.Length)
+                    {
+                        if (sql[end] == '\'')
+                        {
+                            if (end + 1 < sql.Length && sql[end + 1] == '\'') { end += 2; continue; }
+                            end++;
+                            break;
+                        }
+                        end++;
+                    }
+                    result.Append(sql, at, end - at);
+                    at = end;
+                    continue;
+                }
+
+                result.Append(symbol);
+                at++;
             }
 
-            return result;
+            return result.ToString();
         }
 
         /// <summary>Значение в виде литерала SQL.</summary>

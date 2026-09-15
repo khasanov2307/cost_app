@@ -3,6 +3,8 @@ SimpleJson.cs
 AppSettings.cs
 DataExchange.cs
 PgClient.cs
+DataStore.cs
+SqlDataStore.cs
 DocumentBuilder.cs
 CompanyLogo.cs
 PriceBook.cs
