@@ -357,6 +357,7 @@ namespace KotovCalc
             grid.CellMouseDown += Grid_CellMouseDown;
             grid.CellDoubleClick += Grid_CellDoubleClick;
             grid.RowHeightInfoNeeded += Grid_RowHeightInfoNeeded;
+            grid.CellPainting += Grid_CellPainting;
             grid.DataError += delegate(object s, DataGridViewDataErrorEventArgs e)
             {
                 e.ThrowException = false;
@@ -980,6 +981,20 @@ namespace KotovCalc
                 e.ParsingApplied = true;
             }
         }
+
+        /// <summary>
+        /// У строк-разделов каталога галочки нет: в колонке отметок ничего не рисуем,
+        /// остаётся только название раздела. Сворачивание — щелчком по названию.
+        /// </summary>
+        private void Grid_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex != ColCheck) return;
+            if (!(_grid.Rows[e.RowIndex].Tag is string)) return;   // не раздел каталога
+
+            e.PaintBackground(e.CellBounds, true);
+            e.Handled = true;
+        }
+
 
         private void Grid_RowHeightInfoNeeded(object sender, DataGridViewRowHeightInfoNeededEventArgs e)
         {

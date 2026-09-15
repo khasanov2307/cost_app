@@ -227,6 +227,39 @@ internal static class Harness9
             Check("оплат стало", 5, read.Payments.Count);
             Check("баланс уменьшился", 15000m, read.Balance("Основная касса"));
 
+            Section("Смешанная оплата в две кассы");
+
+            CashBook split = new CashBook();
+            split.Ensure("Касса наличных");
+            split.Ensure("Касса безналичных");
+
+            Payment two = Pay("20/2026", "Касса безналичных", PaymentKind.Mixed, 1000m, 2500m, now, 3500m);
+            two.CashDesk = "Касса наличных";
+            split.AddPayment(two);
+
+            Check("касса наличных получила наличную часть", 1000m, split.Balance("Касса наличных"));
+            Check("касса безналичных получила безналичную часть", 2500m, split.Balance("Касса безналичных"));
+            Check("частей оплаты", 2, two.Parts.Count);
+            Check("касса наличной части", "Касса наличных", two.Parts[0].Desk);
+            Check("сумма наличной части", 1000m, two.Parts[0].Amount);
+            Check("касса безналичной части", "Касса безналичных", two.Parts[1].Desk);
+            Check("сумма безналичной части", 2500m, two.Parts[1].Amount);
+            Check("подпись касс", "наличные — Касса наличных, безналичные — Касса безналичных", two.DeskTitle);
+
+            // без отдельной кассы наличная часть идёт в общую кассу
+            Payment single = Pay("21/2026", "Касса безналичных", PaymentKind.Mixed, 500m, 1500m, now, 2000m);
+            split.AddPayment(single);
+            Check("наличные без своей кассы идут в общую", 4500m, split.Balance("Касса безналичных"));
+            Check("подпись без отдельной кассы", "Касса безналичных", single.DeskTitle);
+
+            // запись и чтение раздельных касс в файлах
+            FileCashBook splitFiles = new FileCashBook();
+            splitFiles.Save(split);
+            CashBook splitRead = splitFiles.Load();
+            Check("наличная часть сохранилась", 1000m, splitRead.Balance("Касса наличных"));
+            Check("безналичная часть сохранилась", 4500m, splitRead.Balance("Касса безналичных"));
+            Check("касса наличной части сохранилась", "Касса наличных", splitRead.FindPayment("20/2026").CashDeskName);
+
             Section("Проверка записи JSON");
 
             string json = CashBookJson.PaymentToJson(cash.FindPayment("5/2026"));
@@ -276,13 +309,23 @@ internal static class Harness9
                 Check("наличные из базы", 500m, sqlRead.FindPayment("5/2026").Cash);
                 Check("безналичные из базы", 1500m, sqlRead.FindPayment("5/2026").Cashless);
 
+                // удаление оплаты из базы проверяем до сохранения раздельных касс
+                CheckTrue("оплата удалена из базы", sqlCash.Delete(sqlRead.FindPayment("8/2026")), "не найдена");
+                Check("оплат в базе стало", 5, sqlCash.Load().Payments.Count);
+
                 DashboardInfo sqlInfo = Dashboard.Build(sqlRead, estimates, now, 4);
                 Check("сводка по базе совпадает", info.DeskTotal, sqlInfo.DeskTotal);
                 Check("средний чек по базе", info.AverageCheck, sqlInfo.AverageCheck);
                 Check("популярная позиция по базе", "Диагностика двигателя", sqlInfo.Popular[0].Name);
 
-                sqlCash.Delete(sqlRead.FindPayment("8/2026"));
-                Check("оплата удалена из базы", 5, sqlCash.Load().Payments.Count);
+                ICashBookStore splitSql = new SqlCashBook(dbInfo);
+                splitSql.Save(split);
+                CashBook sqlSplit = splitSql.Load();
+                Check("наличная часть в базе", 1000m, sqlSplit.Balance("Касса наличных"));
+                Check("безналичная часть в базе", 4500m, sqlSplit.Balance("Касса безналичных"));
+                Check("подпись касс из базы", "наличные — Касса наличных, безналичные — Касса безналичных",
+                    sqlSplit.FindPayment("20/2026").DeskTitle);
+
 
                 PgClient cleanup = new PgClient(dbInfo);
                 cleanup.Connect();

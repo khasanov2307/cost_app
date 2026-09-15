@@ -28,6 +28,45 @@ namespace KotovCalc
             return EstimateNumbering.Next(ConnectionSettings.Archive.Load(), year);
         }
 
+
+        /// <summary>
+        /// Следующий свободный номер: если предложенный уже занят, берём следующий по порядку.
+        /// Проверка идёт и по архиву заявок, и по оплатам.
+        /// </summary>
+        private string UniqueEstimateNumber(string wanted)
+        {
+            List<SavedEstimate> saved = ConnectionSettings.Archive.Load();
+            CashBook cash = Cash();
+
+            int sequence, year;
+            if (!EstimateNumbering.Parse(wanted, out sequence, out year))
+                return UniqueEstimateNumber(EstimateNumbering.Next(saved, DateTime.Now.Year));
+
+            int step = sequence;
+
+            while (step < sequence + 10000)
+            {
+                string candidate = step.ToString(CultureInfo.InvariantCulture) + "/" +
+                                   year.ToString(CultureInfo.InvariantCulture);
+
+                if (!IsNumberTaken(saved, cash, candidate)) return candidate;
+                step++;
+            }
+
+            return EstimateNumbering.Next(saved, year);
+        }
+
+        /// <summary>Занят ли номер заявки.</summary>
+        private static bool IsNumberTaken(List<SavedEstimate> saved, CashBook cash, string number)
+        {
+            foreach (SavedEstimate estimate in saved)
+                if (string.Equals(estimate.Number, number, StringComparison.CurrentCultureIgnoreCase))
+                    return true;
+
+            if (cash != null && cash.FindPayment(number) != null) return true;
+
+            return false;
+        }
         /// <summary>Сохранение текущей заявки в архив.</summary>
         private void SaveEstimate()
         {
@@ -42,6 +81,7 @@ namespace KotovCalc
             try
             {
                 number = NextEstimateNumber();
+                number = UniqueEstimateNumber(number);
             }
             catch (Exception ex)
             {
@@ -181,20 +221,18 @@ namespace KotovCalc
         {
             if (CountPicked() == 0) return null;
 
-            string number;
+            string wanted = _fields.Number.Trim();
 
-            // если заявка уже открыта или сохранена, номер не меняем
-            if (_fields.Number.Trim().Length > 0 &&
-                ConnectionSettings.Archive.Load().FindIndex(delegate(SavedEstimate saved)
-                {
-                    return string.Equals(saved.Number, _fields.Number.Trim(), StringComparison.CurrentCultureIgnoreCase);
-                }) >= 0)
+            // номер должен быть уникальным: при совпадении берём следующий по порядку
+            string number = UniqueEstimateNumber(wanted.Length > 0 ? wanted : NextEstimateNumber());
+
+            if (wanted.Length > 0 && !string.Equals(wanted, number, StringComparison.CurrentCultureIgnoreCase))
             {
-                number = _fields.Number.Trim();
-            }
-            else
-            {
-                number = NextEstimateNumber();
+                SetStatus("Номер " + wanted + " уже занят — заявке присвоен номер " + number + ".");
+                MessageBox.Show(this,
+                    "Номер " + wanted + " уже занят другой заявкой.\\n\\n" +
+                    "Текущей заявке присвоен следующий номер: " + number + ".",
+                    "Номер заявки", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
             SavedEstimate estimate = BuildEstimate(number, DateTime.Now);

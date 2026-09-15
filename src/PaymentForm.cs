@@ -1,9 +1,8 @@
 // ---------------------------------------------------------------------------
 //  Окно оплаты заявки и справочник касс.
 //
-//  В окне оплаты указывается касса, способ оплаты (наличные, безналичные,
-//  смешанная) и суммы. Программа показывает остаток к доплате и не даёт
-//  записать оплату больше суммы заявки.
+//  При смешанной оплате касса выбирается отдельно для наличной
+//  и для безналичной части: деньги могут прийти в разные кассы.
 // ---------------------------------------------------------------------------
 
 using System;
@@ -23,12 +22,15 @@ namespace KotovCalc
         private readonly string _customer;
 
         private ComboBox _kind;
-        private ComboBox _deskList;
+        private ComboBox _cashDeskList;
+        private ComboBox _cashlessDeskList;
         private TextBox _deskNew;
         private TextBox _cashBox;
         private TextBox _cashlessBox;
         private TextBox _note;
         private Label _summary;
+        private Label _cashDeskLabel;
+        private Label _cashlessDeskLabel;
         private Button _ok;
 
         /// <summary>Готовая оплата.</summary>
@@ -46,15 +48,22 @@ namespace KotovCalc
             if (existing != null)
             {
                 _kind.SelectedIndex = (int)existing.Kind;
+
+                SelectDesk(_cashDeskList, existing.CashDeskName);
+                SelectDesk(_cashlessDeskList, existing.CashlessDeskName);
+
                 _cashBox.Text = existing.Cash > 0m ? Fmt.MoneyPlain(existing.Cash) : "";
                 _cashlessBox.Text = existing.Cashless > 0m ? Fmt.MoneyPlain(existing.Cashless) : "";
                 _note.Text = existing.Note;
-
-                if (_deskList.Items.Contains(existing.Desk)) _deskList.SelectedItem = existing.Desk;
-                else if (existing.Desk.Length > 0) _deskNew.Text = existing.Desk;
             }
 
             UpdateSummary();
+        }
+
+        private static void SelectDesk(ComboBox list, string name)
+        {
+            if (name.Length == 0) return;
+            if (list.Items.Contains(name)) list.SelectedItem = name;
         }
 
         private void Build()
@@ -65,12 +74,12 @@ namespace KotovCalc
             MaximizeBox = false;
             MinimizeBox = false;
             ShowInTaskbar = false;
-            ClientSize = new Size(520, 400);
+            ClientSize = new Size(560, 440);
             Font = new Font("Segoe UI", 9.75f, FontStyle.Regular, GraphicsUnit.Point);
 
             Label header = new Label();
             header.AutoSize = false;
-            header.Size = new Size(488, 42);
+            header.Size = new Size(528, 42);
             header.Location = new Point(16, 12);
             header.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold, GraphicsUnit.Point);
             header.Text = "Заявка № " + (_number.Length == 0 ? "без номера" : _number) +
@@ -82,7 +91,7 @@ namespace KotovCalc
 
             AddLabel("Способ оплаты:", 16, top);
             _kind = new ComboBox();
-            _kind.Location = new Point(150, top - 3);
+            _kind.Location = new Point(190, top - 3);
             _kind.Width = 180;
             _kind.DropDownStyle = ComboBoxStyle.DropDownList;
             _kind.Items.AddRange(PaymentKinds.List);
@@ -91,60 +100,66 @@ namespace KotovCalc
             Controls.Add(_kind);
 
             top += 36;
-            AddLabel("Касса:", 16, top);
-            _deskList = new ComboBox();
-            _deskList.Location = new Point(150, top - 3);
-            _deskList.Width = 180;
-            _deskList.DropDownStyle = ComboBoxStyle.DropDownList;
-            foreach (CashDesk desk in _cash.Desks)
-                if (!desk.Archive) _deskList.Items.Add(desk.Name);
-            if (_deskList.Items.Count > 0) _deskList.SelectedIndex = 0;
-            Controls.Add(_deskList);
+            _cashDeskLabel = AddLabel("Касса:", 16, top);
+            _cashDeskList = new ComboBox();
+            _cashDeskList.Location = new Point(190, top - 3);
+            _cashDeskList.Width = 180;
+            _cashDeskList.DropDownStyle = ComboBoxStyle.DropDownList;
+            AddDesks(_cashDeskList);
+            Controls.Add(_cashDeskList);
+
+            top += 32;
+            _cashlessDeskLabel = AddLabel("Касса для безналичных:", 16, top);
+            _cashlessDeskList = new ComboBox();
+            _cashlessDeskList.Location = new Point(190, top - 3);
+            _cashlessDeskList.Width = 180;
+            _cashlessDeskList.DropDownStyle = ComboBoxStyle.DropDownList;
+            AddDesks(_cashlessDeskList);
+            Controls.Add(_cashlessDeskList);
 
             Button addDesk = MakeButton("Новая касса…", 140);
-            addDesk.Location = new Point(340, top - 4);
+            addDesk.Location = new Point(390, top - 4);
             addDesk.Click += delegate { AddDesk(); };
             Controls.Add(addDesk);
 
-            top += 36;
-            AddLabel("Или название новой:", 16, top);
+            top += 34;
+            AddLabel("Новая касса (название):", 16, top);
             _deskNew = new TextBox();
-            _deskNew.Location = new Point(190, top - 3);
+            _deskNew.Location = new Point(230, top - 3);
             _deskNew.Width = 140;
             Controls.Add(_deskNew);
 
             top += 40;
             AddLabel("Наличными, \u20BD:", 16, top);
             _cashBox = new TextBox();
-            _cashBox.Location = new Point(190, top - 3);
+            _cashBox.Location = new Point(230, top - 3);
             _cashBox.Width = 140;
             _cashBox.TextAlign = HorizontalAlignment.Right;
             _cashBox.TextChanged += delegate { UpdateSummary(); };
             Controls.Add(_cashBox);
 
-            top += 32;
-            AddLabel("Безналичными, \u20BD:", 16, top);
-            _cashlessBox = new TextBox();
-            _cashlessBox.Location = new Point(190, top - 3);
-            _cashlessBox.Width = 140;
-            _cashlessBox.TextAlign = HorizontalAlignment.Right;
-            _cashlessBox.TextChanged += delegate { UpdateSummary(); };
-            Controls.Add(_cashlessBox);
-
-            top += 32;
-            Button fill = MakeButton("Вся сумма наличными", 200);
-            fill.Location = new Point(16, top - 4);
-            fill.Click += delegate
+            Button fillCash = MakeButton("Вся сумма наличными", 190);
+            fillCash.Location = new Point(390, top - 4);
+            fillCash.Click += delegate
             {
                 _kind.SelectedIndex = (int)PaymentKind.Cash;
                 _cashBox.Text = Fmt.MoneyPlain(Remaining());
                 _cashlessBox.Text = "";
                 UpdateSummary();
             };
-            Controls.Add(fill);
+            Controls.Add(fillCash);
 
-            Button fillCashless = MakeButton("Вся сумма безналичными", 210);
-            fillCashless.Location = new Point(226, top - 4);
+            top += 32;
+            AddLabel("Безналичными, \u20BD:", 16, top);
+            _cashlessBox = new TextBox();
+            _cashlessBox.Location = new Point(230, top - 3);
+            _cashlessBox.Width = 140;
+            _cashlessBox.TextAlign = HorizontalAlignment.Right;
+            _cashlessBox.TextChanged += delegate { UpdateSummary(); };
+            Controls.Add(_cashlessBox);
+
+            Button fillCashless = MakeButton("Вся сумма безналичными", 190);
+            fillCashless.Location = new Point(390, top - 4);
             fillCashless.Click += delegate
             {
                 _kind.SelectedIndex = (int)PaymentKind.Cashless;
@@ -154,17 +169,17 @@ namespace KotovCalc
             };
             Controls.Add(fillCashless);
 
-            top += 40;
+            top += 36;
             AddLabel("Примечание:", 16, top);
             _note = new TextBox();
-            _note.Location = new Point(150, top - 3);
-            _note.Width = 330;
+            _note.Location = new Point(190, top - 3);
+            _note.Width = 340;
             Controls.Add(_note);
 
-            top += 40;
+            top += 38;
             _summary = new Label();
             _summary.AutoSize = false;
-            _summary.Size = new Size(488, 46);
+            _summary.Size = new Size(528, 48);
             _summary.Location = new Point(16, top);
             _summary.Font = new Font("Segoe UI", 10f, FontStyle.Bold, GraphicsUnit.Point);
             Controls.Add(_summary);
@@ -184,13 +199,22 @@ namespace KotovCalc
             CancelButton = cancel;
         }
 
-        private void AddLabel(string text, int x, int y)
+        private void AddDesks(ComboBox list)
+        {
+            foreach (CashDesk desk in _cash.Desks)
+                if (!desk.Archive) list.Items.Add(desk.Name);
+
+            if (list.Items.Count > 0) list.SelectedIndex = 0;
+        }
+
+        private Label AddLabel(string text, int x, int y)
         {
             Label label = new Label();
             label.Text = text;
             label.AutoSize = true;
             label.Location = new Point(x, y);
             Controls.Add(label);
+            return label;
         }
 
         private static Button MakeButton(string text, int width)
@@ -221,6 +245,11 @@ namespace KotovCalc
             return (PaymentKind)Math.Max(0, _kind.SelectedIndex);
         }
 
+        private static string Selected(ComboBox list)
+        {
+            return list.SelectedItem == null ? "" : Convert.ToString(list.SelectedItem);
+        }
+
         private void UpdateSummary()
         {
             decimal cash = Amount(_cashBox.Text);
@@ -232,25 +261,49 @@ namespace KotovCalc
             if (kind == PaymentKind.Cash && cashless > 0m && cash == 0m) kind = PaymentKind.Cashless;
             if (kind == PaymentKind.Cashless && cash > 0m && cashless == 0m) kind = PaymentKind.Cash;
 
+            // касса нужна только для тех частей, которые заполнены
+            bool needCashDesk = cash > 0m;
+            bool needCashlessDesk = cashless > 0m;
+
+            _cashDeskLabel.Visible = _cashDeskList.Visible = needCashDesk;
+            _cashlessDeskLabel.Visible = _cashlessDeskList.Visible = needCashlessDesk;
+
+            _cashDeskLabel.Text = kind == PaymentKind.Mixed ? "Касса для наличных:" : "Касса:";
+            _cashlessDeskLabel.Text = "Касса для безналичных:";
+
             string text = "К оплате: " + Fmt.Money(total) + " \u20BD";
 
             if (left > 0.005m) text += "   •   осталось доплатить: " + Fmt.Money(left) + " \u20BD";
             else if (left < -0.005m) text += "   •   больше суммы заявки на " + Fmt.Money(-left) + " \u20BD";
             else if (_due > 0m) text += "   •   заявка оплачена полностью";
 
-            _summary.Text = text;
+            if (cash > 0m && cashless > 0m)
+            {
+                string cashDesk = Selected(_cashDeskList);
+                string cashlessDesk = Selected(_cashlessDeskList);
+
+                text += Environment.NewLine + "Наличные — " +
+                        (cashDesk.Length == 0 ? "касса не выбрана" : cashDesk) +
+                        ", безналичные — " +
+                        (cashlessDesk.Length == 0 ? "касса не выбрана" : cashlessDesk);
+            }
 
             bool wrongKind = (kind == PaymentKind.Cash && cashless > 0m) ||
                              (kind == PaymentKind.Cashless && cash > 0m);
 
-            _ok.Enabled = total > 0m && left >= -0.005m && !wrongKind;
+            bool desksReady = (!needCashDesk || Selected(_cashDeskList).Length > 0) &&
+                              (!needCashlessDesk || Selected(_cashlessDeskList).Length > 0);
+
+            _ok.Enabled = total > 0m && left >= -0.005m && !wrongKind && desksReady;
 
             if (wrongKind)
-                _summary.Text = text + Environment.NewLine +
-                    "Для двух сумм выберите смешанную оплату.";
+                text += Environment.NewLine + "Для двух сумм выберите смешанную оплату.";
             else if (left < -0.005m)
-                _summary.Text = text + Environment.NewLine +
-                    "Сумма больше заявки: уменьшите платёж.";
+                text += Environment.NewLine + "Сумма больше заявки: уменьшите платёж.";
+            else if (!desksReady)
+                text += Environment.NewLine + "Выберите кассу для каждой заполненной суммы.";
+
+            _summary.Text = text;
         }
 
         private void AddDesk()
@@ -259,34 +312,24 @@ namespace KotovCalc
 
             if (name.Length == 0)
             {
-                MessageBox.Show(this, "Введите название кассы в поле «Или название новой».",
+                MessageBox.Show(this, "Введите название новой кассы в поле «Новая касса (название)».",
                     "Касса", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 _deskNew.Focus();
                 return;
             }
 
             CashDesk created = _cash.Ensure(name);
-            if (!_deskList.Items.Contains(created.Name)) _deskList.Items.Add(created.Name);
-            _deskList.SelectedItem = created.Name;
+
+            if (!_cashDeskList.Items.Contains(created.Name)) _cashDeskList.Items.Add(created.Name);
+            if (!_cashlessDeskList.Items.Contains(created.Name)) _cashlessDeskList.Items.Add(created.Name);
+
+            _cashDeskList.SelectedItem = created.Name;
             _deskNew.Text = "";
         }
 
         private void Accept()
         {
-            string desk = _deskList.SelectedItem == null ? "" : Convert.ToString(_deskList.SelectedItem);
-
-            if (_deskNew.Text.Trim().Length > 0)
-            {
-                AddDesk();
-                desk = _deskList.SelectedItem == null ? desk : Convert.ToString(_deskList.SelectedItem);
-            }
-
-            if (desk.Length == 0)
-            {
-                MessageBox.Show(this, "Выберите кассу или создайте новую.",
-                    "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
+            if (_deskNew.Text.Trim().Length > 0) AddDesk();
 
             decimal cash = Amount(_cashBox.Text);
             decimal cashless = Amount(_cashlessBox.Text);
@@ -298,16 +341,36 @@ namespace KotovCalc
                 return;
             }
 
+            string cashDesk = Selected(_cashDeskList);
+            string cashlessDesk = Selected(_cashlessDeskList);
+
+            if (cash > 0m && cashDesk.Length == 0)
+            {
+                MessageBox.Show(this, "Выберите кассу для наличной части.",
+                    "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (cashless > 0m && cashlessDesk.Length == 0)
+            {
+                MessageBox.Show(this, "Выберите кассу для безналичной части.",
+                    "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
             Payment payment = new Payment();
             payment.Number = _number;
             payment.Customer = _customer;
             payment.Saved = DateTime.Now;
-            payment.Desk = desk;
             payment.Kind = Kind();
             payment.Cash = cash;
             payment.Cashless = cashless;
             payment.Due = _due;
             payment.Note = _note.Text.Trim();
+
+            // при смешанной оплате у частей могут быть разные кассы
+            payment.CashDesk = cash > 0m ? cashDesk : "";
+            payment.Desk = cashless > 0m ? cashlessDesk : cashDesk;
 
             Result = payment;
             DialogResult = DialogResult.OK;
@@ -419,9 +482,16 @@ namespace KotovCalc
             {
                 decimal balance = _cash.Balance(desk.Name);
                 int payments = 0;
+
                 foreach (Payment payment in _cash.Payments)
-                    if (string.Equals(payment.Desk, desk.Name, StringComparison.CurrentCultureIgnoreCase))
-                        payments++;
+                {
+                    foreach (PaymentPart part in payment.Parts)
+                        if (string.Equals(part.Desk, desk.Name, StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            payments++;
+                            break;
+                        }
+                }
 
                 ListViewItem row = new ListViewItem(desk.Name);
                 row.SubItems.Add(Fmt.Money(balance));
@@ -502,10 +572,14 @@ namespace KotovCalc
                 return;
             }
 
-            // переносим оплаты и операции на новое название
             foreach (Payment payment in _cash.Payments)
+            {
                 if (string.Equals(payment.Desk, desk.Name, StringComparison.CurrentCultureIgnoreCase))
                     payment.Desk = name;
+
+                if (string.Equals(payment.CashDesk, desk.Name, StringComparison.CurrentCultureIgnoreCase))
+                    payment.CashDesk = name;
+            }
 
             foreach (DeskOperation operation in _cash.Operations)
                 if (string.Equals(operation.Desk, desk.Name, StringComparison.CurrentCultureIgnoreCase))
@@ -523,9 +597,16 @@ namespace KotovCalc
 
             decimal balance = _cash.Balance(desk.Name);
             int payments = 0;
+
             foreach (Payment payment in _cash.Payments)
-                if (string.Equals(payment.Desk, desk.Name, StringComparison.CurrentCultureIgnoreCase))
-                    payments++;
+            {
+                foreach (PaymentPart part in payment.Parts)
+                    if (string.Equals(part.Desk, desk.Name, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        payments++;
+                        break;
+                    }
+            }
 
             if (payments > 0)
             {

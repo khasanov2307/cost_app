@@ -70,10 +70,11 @@ namespace KotovCalc
                 catch (Exception ex)
                 {
                     MessageBox.Show(this, "Не удалось сохранить заявку перед оплатой:\n" + ex.Message,
-                        "Оплата заявки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
+
             string number = _fields.Number.Trim();
 
             if (number.Length == 0)
@@ -97,7 +98,7 @@ namespace KotovCalc
             {
                 MessageBox.Show(this,
                     "Не отмечено ни одной услуги, поэтому сумму заявки определить нельзя.",
-                    "Оплата заявки", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    "Оплата", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -111,7 +112,7 @@ namespace KotovCalc
                 string message = "Оплата по заявке № " + number + ": " +
                                  PaymentKinds.Title(dialog.Result.Kind) + " " +
                                  Fmt.Money(dialog.Result.Total) + " \u20BD" +
-                                 "   •   касса: " + dialog.Result.Desk;
+                                 "   •   касса: " + dialog.Result.DeskTitle;
 
                 if (dialog.Result.Remaining > 0m)
                     message += "   •   осталось доплатить: " + Fmt.Money(dialog.Result.Remaining) + " \u20BD";
@@ -136,11 +137,13 @@ namespace KotovCalc
                 dialog.ShowDialog(this);
             }
 
-            decimal total = 0m;
-            foreach (CashDesk desk in cash.Desks) total += cash.Balance(desk.Name);
+            _cashLoaded = false;
 
-            SetStatus("Касс: " + cash.Desks.Count + "   •   денег во всех кассах: " +
-                      Fmt.Money(total) + " \u20BD   •   оплат: " + cash.Payments.Count);
+            decimal total = 0m;
+            foreach (CashDesk desk in Cash().Desks) total += _cash.Balance(desk.Name);
+
+            SetStatus("Касс: " + _cash.Desks.Count + "   •   денег во всех кассах: " +
+                      Fmt.Money(total) + " \u20BD   •   оплат: " + _cash.Payments.Count);
         }
 
         // -------------------------------------------------------- показатели
@@ -149,6 +152,7 @@ namespace KotovCalc
         private void OpenDashboard()
         {
             _cashLoaded = false;
+
             List<SavedEstimate> estimates;
 
             try

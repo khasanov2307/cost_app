@@ -69,13 +69,31 @@ namespace KotovCalc
         public override string ToString() { return Name; }
     }
 
+    /// <summary>Часть оплаты: сколько денег пришло в конкретную кассу.</summary>
+    internal sealed class PaymentPart
+    {
+        public readonly string Desk;
+        public readonly decimal Amount;
+        public readonly string Kind;
+
+        public PaymentPart(string desk, decimal amount, string kind)
+        {
+            Desk = desk ?? "";
+            Amount = amount;
+            Kind = kind ?? "";
+        }
+    }
+
+    /// <summary>Оплата по заявке.</summary>
+
     /// <summary>Оплата по заявке.</summary>
     internal sealed class Payment
     {
         public string Number = "";          // номер заявки
         public DateTime Saved = DateTime.Now;
         public string Customer = "";
-        public string Desk = "";            // касса
+        public string Desk = "";            // касса (для смешанной — касса безналичной части)
+        public string CashDesk = "";        // касса наличной части (смешанная оплата)
         public PaymentKind Kind = PaymentKind.Cash;
         public decimal Cash;                // наличными
         public decimal Cashless;            // безналичными
@@ -100,6 +118,49 @@ namespace KotovCalc
             }
         }
 
+        /// <summary>Касса наличной части: для смешанной оплаты — отдельная.</summary>
+        public string CashDeskName
+        {
+            get { return CashDesk.Length > 0 ? CashDesk : Desk; }
+        }
+
+        /// <summary>Касса безналичной части.</summary>
+        public string CashlessDeskName
+        {
+            get { return Desk; }
+        }
+
+        /// <summary>Подпись касс для строки состояния.</summary>
+        public string DeskTitle
+        {
+            get
+            {
+                if (Kind != PaymentKind.Mixed || Cash <= 0m || Cashless <= 0m)
+                    return CashDeskName;
+
+                // если обе части пришли в одну кассу, разбивать нечего
+                if (string.Equals(CashDeskName, CashlessDeskName, StringComparison.CurrentCultureIgnoreCase))
+                    return CashDeskName;
+
+                return "наличные — " + CashDeskName + ", безналичные — " + CashlessDeskName;
+            }
+        }
+
+        /// <summary>Части оплаты по кассам: касса, сумма, название.</summary>
+        public List<PaymentPart> Parts
+        {
+            get
+            {
+                List<PaymentPart> parts = new List<PaymentPart>();
+
+                if (Cash > 0m) parts.Add(new PaymentPart(CashDeskName, Cash, "наличные"));
+                if (Cashless > 0m) parts.Add(new PaymentPart(CashlessDeskName, Cashless, "безналичные"));
+
+                return parts;
+            }
+        }
+
+        /// <summary>Подпись для списка.</summary>
         /// <summary>Подпись для списка.</summary>
         public string Caption
         {
@@ -111,7 +172,7 @@ namespace KotovCalc
                 if (Customer.Length > 0) text.Append("   ").Append(Customer);
                 text.Append("   ").Append(PaymentKinds.Title(Kind));
                 text.Append(": ").Append(Fmt.Money(Total));
-                if (Desk.Length > 0) text.Append("   касса: ").Append(Desk);
+                if (DeskTitle.Length > 0) text.Append("   касса: ").Append(DeskTitle);
                 return text.ToString();
             }
         }
@@ -166,8 +227,13 @@ namespace KotovCalc
 
             foreach (Payment payment in Payments)
             {
-                if (!string.Equals(payment.Desk, desk, StringComparison.CurrentCultureIgnoreCase)) continue;
-                total += payment.Total;
+                // смешанная оплата раскладывается по кассам: наличная часть
+                // и безналичная могут лежать в разных кассах
+                foreach (PaymentPart part in payment.Parts)
+                {
+                    if (!string.Equals(part.Desk, desk, StringComparison.CurrentCultureIgnoreCase)) continue;
+                    total += part.Amount;
+                }
             }
 
             foreach (DeskOperation operation in Operations)
@@ -404,6 +470,7 @@ namespace KotovCalc
             root["saved"] = payment.Saved.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
             root["customer"] = payment.Customer;
             root["desk"] = payment.Desk;
+            root["cash_desk"] = payment.CashDesk;
             root["kind"] = PaymentKinds.Title(payment.Kind);
             root["cash"] = payment.Cash;
             root["cashless"] = payment.Cashless;
@@ -421,6 +488,7 @@ namespace KotovCalc
             payment.Number = SimpleJson.Text(root, "number");
             payment.Customer = SimpleJson.Text(root, "customer");
             payment.Desk = SimpleJson.Text(root, "desk");
+            payment.CashDesk = SimpleJson.Text(root, "cash_desk");
             payment.Kind = PaymentKinds.Parse(SimpleJson.Text(root, "kind"));
             payment.Cash = SimpleJson.Number(root, "cash", 0m);
             payment.Cashless = SimpleJson.Number(root, "cashless", 0m);

@@ -46,6 +46,7 @@ namespace KotovCalc
                     saved timestamp NOT NULL DEFAULT now(),
                     customer text NOT NULL DEFAULT '',
                     desk text NOT NULL DEFAULT '',
+                    cash_desk text NOT NULL DEFAULT '',
                     kind text NOT NULL DEFAULT 'наличные',
                     cash numeric(12,2) NOT NULL DEFAULT 0,
                     cashless numeric(12,2) NOT NULL DEFAULT 0,
@@ -62,6 +63,11 @@ namespace KotovCalc
 
             foreach (string command in commands)
                 if (!client.Execute(command)) return client.LastError;
+
+            // в таблицах, созданных прошлыми версиями, колонки кассы наличной части может не быть
+            if (!client.Execute("ALTER TABLE smeta_payments ADD COLUMN IF NOT EXISTS cash_desk text NOT NULL DEFAULT ''"))
+                return client.LastError;
+
 
             return null;
         }
@@ -89,7 +95,7 @@ namespace KotovCalc
                 }
 
                 List<PgRow> payments = client.Query(
-                    "SELECT number, to_char(saved, 'YYYY-MM-DD HH24:MI:SS') AS saved_at, customer, desk, kind, " +
+                    "SELECT number, to_char(saved, 'YYYY-MM-DD HH24:MI:SS') AS saved_at, customer, desk, cash_desk, kind, " +
                     "cash, cashless, due, note FROM smeta_payments ORDER BY saved DESC");
                 if (payments == null) throw new PgException(client.LastError);
 
@@ -99,6 +105,7 @@ namespace KotovCalc
                     payment.Number = Text(row["number"]);
                     payment.Customer = Text(row["customer"]);
                     payment.Desk = Text(row["desk"]);
+                    payment.CashDesk = Text(row["cash_desk"]);
                     payment.Kind = PaymentKinds.Parse(Text(row["kind"]));
                     payment.Cash = Number(row["cash"]);
                     payment.Cashless = Number(row["cashless"]);
@@ -171,14 +178,16 @@ namespace KotovCalc
                     keep.Add(payment.Number);
 
                     bool ok = client.Execute(
-                        @"INSERT INTO smeta_payments (number, saved, customer, desk, kind, cash, cashless, due, note)
-                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                        @"INSERT INTO smeta_payments (number, saved, customer, desk, cash_desk, kind, cash, cashless, due, note)
+                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                           ON CONFLICT (number) DO UPDATE SET
                             saved = EXCLUDED.saved, customer = EXCLUDED.customer, desk = EXCLUDED.desk,
+                            cash_desk = EXCLUDED.cash_desk,
                             kind = EXCLUDED.kind, cash = EXCLUDED.cash, cashless = EXCLUDED.cashless,
                             due = EXCLUDED.due, note = EXCLUDED.note",
                         payment.Number, payment.Saved.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                        payment.Customer ?? "", payment.Desk ?? "", PaymentKinds.Title(payment.Kind),
+                        payment.Customer ?? "", payment.Desk ?? "", payment.CashDesk ?? "",
+                        PaymentKinds.Title(payment.Kind),
                         payment.Cash, payment.Cashless, payment.Due, payment.Note ?? "");
 
                     if (!ok) { client.Execute("ROLLBACK"); throw new PgException(client.LastError); }
