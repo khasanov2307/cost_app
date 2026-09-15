@@ -124,6 +124,33 @@ internal static class RenderForms
             return;
         }
 
+        if (mode == "payment-open")
+        {
+            using (PaymentForm form = new PaymentForm(cash, "1/2026", "ООО Ромашка", 4500m, null))
+            {
+                form.StartPosition = FormStartPosition.Manual;
+                form.Location = new Point(0, 0);
+                form.Show();
+                Application.DoEvents();
+                ((ComboBox)Field(form, "_kind")).SelectedIndex = (int)PaymentKind.Mixed;
+                Application.DoEvents();
+                form.Refresh();
+                Application.DoEvents();
+
+                using (Bitmap bitmap = new Bitmap(form.Width, form.Height))
+                {
+                    form.DrawToBitmap(bitmap, new Rectangle(0, 0, form.Width, form.Height));
+                    bitmap.Save(output, ImageFormat.Png);
+                }
+
+                Console.WriteLine("saved: " + Path.GetFullPath(output));
+                Console.WriteLine("видно поле кассы: " + ((ComboBox)Field(form, "_cashDeskList")).Visible +
+                                  ", поле кассы для безналичных: " + ((ComboBox)Field(form, "_cashlessDeskList")).Visible);
+                form.Close();
+            }
+            return;
+        }
+
         // по умолчанию — окно оплаты при смешанной оплате
         Payment existing = null;
         decimal due = 4500m;
@@ -147,11 +174,7 @@ internal static class RenderForms
             cashDesk.SelectedItem = "Основная касса";
             cashlessDesk.SelectedItem = "Расчётный счёт";
 
-            // подпись пересчитывается при любом изменении; в снимке вызываем явно
-            typeof(PaymentForm).GetMethod("UpdateSummary", Hidden).Invoke(form, null);
 
-            // проверяем, что запись оплаты разложит части по выбранным кассам
-            typeof(PaymentForm).GetMethod("Accept", Hidden).Invoke(form, null);
 
             Application.DoEvents();
             form.Refresh();
@@ -164,8 +187,6 @@ internal static class RenderForms
             }
 
             Console.WriteLine("saved: " + Path.GetFullPath(output));
-            Console.WriteLine("итог: " + ((Label)Field(form, "_summary")).Text.Replace(Environment.NewLine, " | "));
-            Console.WriteLine("запись: " + ((Label)Field(form, "_summary")).Text.Replace(Environment.NewLine, " | "));
             form.Close();
         }
     }

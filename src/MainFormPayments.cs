@@ -146,7 +146,8 @@ namespace KotovCalc
             message += "   •   заявка сохранена, позиций: " + estimate.Items.Count;
 
             // после оплаты заявка закрыта: отметки снимаются, программа готова к следующей
-            StartNewEstimate(false);
+            // номер и отметки сбрасываются: следующая заявка получит свой номер
+            StartNewEstimate(false, true);
 
             SetStatus(message + "   •   можно оформлять следующую.");
         }

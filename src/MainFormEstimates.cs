@@ -141,6 +141,15 @@ namespace KotovCalc
         /// </summary>
         private void StartNewEstimate(bool clearFields)
         {
+            StartNewEstimate(clearFields, false);
+        }
+
+        /// <summary>
+        /// Новая заявка. clearNumber — очистить и номер (после оплаты),
+        /// при запуске номер очищается вместе с остальными реквизитами.
+        /// </summary>
+        private void StartNewEstimate(bool clearFields, bool clearNumber)
+        {
             _restoring = true;
             try
             {
@@ -161,6 +170,12 @@ namespace KotovCalc
                     if (_numberBox != null) _numberBox.Text = "";
                     if (_customerBox != null) _customerBox.Text = "";
                     if (_discountBox != null) _discountBox.Value = 0m;
+                }
+
+                if (clearNumber)
+                {
+                    _fields.Number = "";
+                    if (_numberBox != null) _numberBox.Text = "";
                 }
             }
             finally

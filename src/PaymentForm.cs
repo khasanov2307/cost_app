@@ -261,17 +261,17 @@ namespace KotovCalc
             if (kind == PaymentKind.Cash && cashless > 0m && cash == 0m) kind = PaymentKind.Cashless;
             if (kind == PaymentKind.Cashless && cash > 0m && cashless == 0m) kind = PaymentKind.Cash;
 
-            // касса нужна только для тех частей, которые заполнены
-            bool needCashDesk = cash > 0m;
-            bool needCashlessDesk = cashless > 0m;
-
-            _cashDeskLabel.Visible = _cashDeskList.Visible = needCashDesk;
-            _cashlessDeskLabel.Visible = _cashlessDeskList.Visible = needCashlessDesk;
+            // касса видна всегда: её выбирают до ввода сумм
+            bool needCashDesk = true;
+            bool needCashlessDesk = cashless > 0m || Kind() == PaymentKind.Mixed;
 
             _cashDeskLabel.Text = kind == PaymentKind.Mixed ? "Касса для наличных:" : "Касса:";
             _cashlessDeskLabel.Text = "Касса для безналичных:";
 
             string text = "К оплате: " + Fmt.Money(total);
+
+            if (_cash.Desks.Count == 0)
+                text += Environment.NewLine + "Касс пока нет: создайте кассу, чтобы записать оплату.";
 
             if (left > 0.005m) text += "   •   осталось доплатить: " + Fmt.Money(left);
             else if (left < -0.005m) text += "   •   больше суммы заявки на " + Fmt.Money(-left);

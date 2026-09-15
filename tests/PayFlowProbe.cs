@@ -19,7 +19,22 @@ internal static class PayFlowProbe
 
     private static object Call(object target, string name, object[] args)
     {
-        return target.GetType().GetMethod(name, Hidden).Invoke(target, args);
+        if (args == null) args = new object[0];
+
+        // у метода может быть несколько перегрузок — выбираем подходящую по числу аргументов
+        BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+        for (Type type = target.GetType(); type != null; type = type.BaseType)
+        {
+            foreach (System.Reflection.MethodInfo method in type.GetMethods(flags))
+            {
+                if (method.Name != name) continue;
+                if (method.GetParameters().Length != args.Length) continue;
+                return method.Invoke(target, args);
+            }
+        }
+
+        throw new MissingMethodException(name + " с " + args.Length + " аргументами не найден");
     }
 
     private static void Mark(MainForm form, int count)
@@ -127,12 +142,47 @@ internal static class PayFlowProbe
         }
 
         // отметки после оплаты должны быть сняты
-        Call(form, "StartNewEstimate", new object[] { false });
+        Call(form, "StartNewEstimate", new object[] { false, true });
         int left = 0;
         foreach (EstimateRow row in (List<EstimateRow>)Field(form, "_rows")) if (row.Selected) left++;
         Console.WriteLine("отмеченных позиций после оплаты: " + left + ", номер: [" + fields.Number + "]");
 
         if (left != 0) { Console.WriteLine("  ОШИБКА: отметки не сняты"); problems++; }
+
+        // номер заявки после оплаты тоже сбрасывается
+        fields = (DocumentFields)Field(form, "_fields");
+        Console.WriteLine("номер после оплаты: [" + fields.Number + "]");
+        if (fields.Number.Length != 0)
+        {
+            Console.WriteLine("  ОШИБКА: номер заявки не сброшен");
+            problems++;
+        }
+
+        // на форме оплаты поля выбора кассы должны быть видны сразу после открытия
+        using (PaymentForm pay = new PaymentForm(ConnectionSettings.CashBook.Load(),
+                                                "9/2026", "Проверка", 1000m, null))
+        {
+            pay.ShowInTaskbar = false;
+            pay.Opacity = 0;
+            pay.Show();
+            Application.DoEvents();
+
+            bool cashVisible = ((ComboBox)Field(pay, "_cashDeskList")).Visible;
+            bool cashlessVisible = ((ComboBox)Field(pay, "_cashlessDeskList")).Visible;
+            int desks = ((ComboBox)Field(pay, "_cashDeskList")).Items.Count;
+
+            Console.WriteLine("форма оплаты сразу после открытия: поле кассы " + cashVisible +
+                              ", поле кассы для безналичных " + cashlessVisible +
+                              ", касс в списке " + desks);
+
+            if (!cashVisible || !cashlessVisible || desks == 0)
+            {
+                Console.WriteLine("  ОШИБКА: поля выбора кассы не видны");
+                problems++;
+            }
+
+            pay.Close();
+        }
 
         form.Close();
         Directory.Delete(store, true);
