@@ -6,6 +6,7 @@ tests/program-estimate.docx
 tests/docx-check.docx
 tests/Смета_из_браузера.docx
 tests/web_estimate.png
+tests/fix_*.ps1
 tests/download/
 *.tmp
 
