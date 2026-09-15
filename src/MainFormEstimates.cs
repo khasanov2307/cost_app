@@ -63,10 +63,78 @@ namespace KotovCalc
 
             if (answer != DialogResult.OK) return;
 
+            SavedEstimate estimate = BuildEstimate(number, saved);
+
+
+            try
+            {
+                ConnectionSettings.Archive.Save(estimate);
+
+                // номер заявки попадает в реквизиты документа
+                _fields.Number = number;
+                _restoring = true;
+                try { _numberBox.Text = number; }
+                finally { _restoring = false; }
+                SaveSettings();
+
+                SetStatus("Заявка сохранена: № " + number + " от " +
+                          saved.ToString("dd.MM.yyyy HH:mm", Fmt.Ru) +
+                          "   •   позиций: " + estimate.Items.Count +
+                          "   •   на сумму: " + Fmt.Money(estimate.Total) + " \u20BD");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Не удалось сохранить заявку:\n" + ex.Message,
+                    "Сохранение заявки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        // ------------------------------------------------- открытие заявки
+
+        /// <summary>
+        /// Новая заявка: снимаются все отметки, количества и правки цен,
+        /// номер и заказчик очищаются. Так программа выглядит при запуске.
+        /// </summary>
+        private void StartNewEstimate()
+        {
+            _restoring = true;
+            try
+            {
+                foreach (EstimateRow row in _rows)
+                {
+                    row.Selected = false;
+                    row.Quantity = 1m;
+                    row.PriceOverride = null;
+                }
+
+                _fields.Number = "";
+                _fields.Customer = "";
+                _fields.Discount = 0m;
+                _fields.Normalize();
+
+                if (_numberBox != null) _numberBox.Text = "";
+                if (_customerBox != null) _customerBox.Text = "";
+                if (_discountBox != null) _discountBox.Value = 0m;
+            }
+            finally
+            {
+                _restoring = false;
+            }
+
+            SaveSettings();
+            RestyleRows();
+            Recalculate();
+
+            SetStatus("Новая заявка. Номер присвоится автоматически при сохранении.");
+        }
+
+        /// <summary>Сборка заявки по текущим отметкам: номер, дата, заказчик, позиции.</summary>
+        private SavedEstimate BuildEstimate(string number, DateTime saved)
+        {
             SavedEstimate estimate = new SavedEstimate();
             estimate.Number = number;
             estimate.Saved = saved;
-            estimate.Customer = customer;
+            estimate.Customer = _fields.Customer;
             estimate.Discount = AppSettings.ClampDiscount(_fields.Discount);
 
             int sequence, year;
@@ -95,30 +163,44 @@ namespace KotovCalc
                 estimate.Items.Add(item);
             }
 
-            try
-            {
-                ConnectionSettings.Archive.Save(estimate);
-
-                // номер заявки попадает в реквизиты документа
-                _fields.Number = number;
-                _restoring = true;
-                try { _numberBox.Text = number; }
-                finally { _restoring = false; }
-                SaveSettings();
-
-                SetStatus("Заявка сохранена: № " + number + " от " +
-                          saved.ToString("dd.MM.yyyy HH:mm", Fmt.Ru) +
-                          "   •   позиций: " + estimate.Items.Count +
-                          "   •   на сумму: " + Fmt.Money(estimate.Total) + " \u20BD");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(this, "Не удалось сохранить заявку:\n" + ex.Message,
-                    "Сохранение заявки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+            return estimate;
         }
 
-        // ------------------------------------------------- открытие заявки
+        /// <summary>
+        /// Сохранение текущей заявки без вопросов: используется при оплате.
+        /// Возвращает сохранённую заявку или null.
+        /// </summary>
+        private SavedEstimate SaveCurrentEstimate()
+        {
+            if (CountPicked() == 0) return null;
+
+            string number;
+
+            // если заявка уже открыта или сохранена, номер не меняем
+            if (_fields.Number.Trim().Length > 0 &&
+                ConnectionSettings.Archive.Load().FindIndex(delegate(SavedEstimate saved)
+                {
+                    return string.Equals(saved.Number, _fields.Number.Trim(), StringComparison.CurrentCultureIgnoreCase);
+                }) >= 0)
+            {
+                number = _fields.Number.Trim();
+            }
+            else
+            {
+                number = NextEstimateNumber();
+            }
+
+            SavedEstimate estimate = BuildEstimate(number, DateTime.Now);
+            ConnectionSettings.Archive.Save(estimate);
+
+            _fields.Number = number;
+            _restoring = true;
+            try { _numberBox.Text = number; }
+            finally { _restoring = false; }
+            SaveSettings();
+
+            return estimate;
+        }
 
         /// <summary>Список сохранённых заявок и открытие выбранной.</summary>
         private void OpenEstimate()

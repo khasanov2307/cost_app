@@ -154,23 +154,24 @@ internal static class Harness
         Check("заявка содержит итог", true, doc.Contains("ИТОГО К ОПЛАТЕ:"));
         Check("заявка содержит отмеченную услугу", true, doc.Contains("Компьютерная диагностика"));
 
-        Console.WriteLine("[9] Сохранение и восстановление отметок");
+        Console.WriteLine("[9] При запуске начинается новая заявка");
         MethodInfo save = typeof(MainForm).GetMethod("SaveSession",
             BindingFlags.Instance | BindingFlags.NonPublic);
         save.Invoke(form, null);
         string cfg = Path.Combine(PriceBook.StoreFolder, "session.tsv");
         Check("файл состояния создан", true, File.Exists(cfg));
 
+        // новая заявка: отметки и количества прошлого раза не восстанавливаются
         MainForm second = new MainForm();
         Label secondTotal = GetField<Label>(second, "_totalLabel");
-        // к моменту сохранения первая позиция имела количество 2, поэтому итог выше на её цену
-        Check("отметки восстановлены", "ИТОГО: " + (expectedDiag + first.Item.Price).ToString("N2", Fmt.Ru) + " \u20BD",
-              secondTotal.Text);
-        Check("восстановлено количество", 2m,
-              FindSelected(second, first.Item.Group, first.Item.Name).Quantity);
+        Check("при запуске итог нулевой", "ИТОГО: 0,00 \u20A0\u20BD".Replace("\u20A0", ""),
+              secondTotal.Text.Replace("  ", " "));
+        Check("при запуске нет отмеченных позиций", 0, CountSelected(second));
+        DocumentFields secondFields = GetField<DocumentFields>(second, "_fields");
+        Check("номер заявки очищен", "", secondFields.Number);
+        Check("заказчик очищен", "", secondFields.Customer);
 
-        // состояние не должно влиять на дальнейшие запуски
-        File.Delete(cfg);
+        if (File.Exists(cfg)) File.Delete(cfg);
         second.Dispose();
         form.Dispose();
 
@@ -188,6 +189,14 @@ internal static class Harness
         foreach (EstimateRow row in (IEnumerable<EstimateRow>)field.GetValue(form))
             total += row.Sum;
         return total;
+    }
+
+    private static int CountSelected(MainForm form)
+    {
+        List<EstimateRow> rows = GetField<List<EstimateRow>>(form, "_rows");
+        int count = 0;
+        foreach (EstimateRow row in rows) if (row.Selected) count++;
+        return count;
     }
 
     private static EstimateRow FindSelected(MainForm form, string group, string name)

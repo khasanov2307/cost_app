@@ -55,6 +55,25 @@ namespace KotovCalc
         /// <summary>Фиксация оплаты по текущей заявке.</summary>
         private void RegisterPayment()
         {
+            // оплата фиксируется по сохранённой заявке: если её ещё нет, сохраняем сейчас
+            if (CountPicked() > 0)
+            {
+                try
+                {
+                    SavedEstimate savedNow = SaveCurrentEstimate();
+
+                    if (savedNow != null)
+                        SetStatus("Заявка сохранена перед оплатой: № " + savedNow.Number +
+                                  "   •   позиций: " + savedNow.Items.Count +
+                                  "   •   на сумму: " + Fmt.Money(savedNow.Total) + " \u20BD");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, "Не удалось сохранить заявку перед оплатой:\n" + ex.Message,
+                        "Оплата заявки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
             string number = _fields.Number.Trim();
 
             if (number.Length == 0)

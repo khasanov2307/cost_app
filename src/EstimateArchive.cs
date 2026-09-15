@@ -74,7 +74,7 @@ namespace KotovCalc
                 text.Append("   от ").Append(Saved.ToString("dd.MM.yyyy HH:mm", Fmt.Ru));
                 if (Customer.Length > 0) text.Append("   ").Append(Customer);
                 text.Append("   позиций: ").Append(Items.Count);
-                text.Append("   на сумму: ").Append(Fmt.Money(Total)).Append(" \u20BD");
+                text.Append("   на сумму: ").Append(Fmt.Money(Total));
                 return text.ToString();
             }
         }

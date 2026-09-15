@@ -110,7 +110,7 @@ namespace KotovCalc
                 text.Append("   от ").Append(Saved.ToString("dd.MM.yyyy HH:mm", Fmt.Ru));
                 if (Customer.Length > 0) text.Append("   ").Append(Customer);
                 text.Append("   ").Append(PaymentKinds.Title(Kind));
-                text.Append(": ").Append(Fmt.Money(Total)).Append(" \u20BD");
+                text.Append(": ").Append(Fmt.Money(Total));
                 if (Desk.Length > 0) text.Append("   касса: ").Append(Desk);
                 return text.ToString();
             }

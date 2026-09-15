@@ -133,7 +133,7 @@ namespace KotovCalc
             _totalLabel.AutoSize = true;
             _totalLabel.Font = _totalFont;
             _totalLabel.ForeColor = Color.FromArgb(20, 70, 130);
-            _totalLabel.Location = new Point(360, 178);
+            _totalLabel.Location = new Point(14, 178);
             _totalLabel.Text = "ИТОГО: 0,00 \u20BD";
             bottom.Controls.Add(_totalLabel);
 
@@ -385,8 +385,9 @@ namespace KotovCalc
             _rows.Clear();
             foreach (ServiceItem item in _catalog) _rows.Add(new EstimateRow(item));
 
-            // отметки прошлого сеанса — после того, как список позиций уже построен
-            if (firstRun) RestoreSession();
+            // при запуске программа всегда начинает новую заявку:
+            // отметки, количества и цены прошлого раза не восстанавливаются
+            if (firstRun) StartNewEstimate();
 
             RebuildGrid();
         }
@@ -791,9 +792,15 @@ namespace KotovCalc
             int panelWidth = panel != null ? panel.ClientSize.Width : ClientSize.Width;
             int limit = Math.Max(260, panelWidth - 760);
 
-            _totalLabel.Location = new Point(360, 178);
+            // итоговая сумма — в правом нижнем углу панели
+            Size totalSize = _totalLabel.PreferredSize;
+            int totalLimit = Math.Max(200, panelWidth - 40);
+            int totalWidth = Math.Min(totalSize.Width + 8, totalLimit);
+            _totalLabel.Location = new Point(
+                Math.Max(14, panelWidth - totalWidth - 18),
+                Math.Max(14, panel.Height - totalSize.Height - 10));
             _totalLabel.AutoSize = false;
-            _totalLabel.Size = new Size(Math.Max(200, panelWidth - 620), 30);
+            _totalLabel.Size = new Size(totalWidth, totalSize.Height);
             _totalLabel.AutoEllipsis = true;
 
             _countLabel.Location = new Point(14, 168);
