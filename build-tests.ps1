@@ -67,11 +67,10 @@ Write-Host '==> Compiling the Word checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:DocxCheck "/out:$out3" $sourceList `
     (Join-Path $test 'DocxCheck.cs')
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
-
-if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
-    (Join-Path  'Harness6.cs')
-& $csc $commonArgs $commonRefs /main:Harness6 "/out:$out6" $sourceList `
 Write-Host '==> Compiling the store checks' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:Harness6 "/out:$out6" $sourceList `
+    (Join-Path $test 'Harness6.cs')
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 Write-Host '==> Compiling the logo checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:Harness4 "/out:$out5" $sourceList `
@@ -116,13 +115,21 @@ if ($code -ne 0) { throw "Checks failed with exit code $code" }
 
 Write-Host '==> Running the store checks' -ForegroundColor Cyan
 # проверки базы выполняются, если PostgreSQL отвечает на localhost
-$pgTest = Test-NetConnection -ComputerName 127.0.0.1 -Port 5432 -InformationLevel Quiet -WarningAction SilentlyContinue
-if ($pgTest) {
+$databaseReady = $false
+try {
+    $probe = New-Object System.Net.Sockets.TcpClient
+    $probe.Connect("127.0.0.1", 5432)
+    $probe.Close()
+    $databaseReady = $true
+} catch { $databaseReady = $false }
+
+if ($databaseReady) {
     & $out6 127.0.0.1 smeta smeta smeta
     $code = $LASTEXITCODE
     if ($code -ne 0) { throw "Store checks failed with exit code $code" }
-} else {
-    Write-Host '    PostgreSQL недоступен - проверки хранилища в базе пропущены'
+}
+else {
+    Write-Host '    PostgreSQL is not available - database store checks skipped'
 }
 
 Write-Host ''
