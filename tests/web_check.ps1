@@ -172,7 +172,7 @@ try {
     [void](Eval 'WebEstimate.setQuantity(WebEstimate.keyOf(WebEstimate.state.items[0]), "3")')
     [void](Eval 'document.getElementById("estimate").click()')
     Check 'sheet is open' $true (Eval 'document.getElementById("overlay").classList.contains("open")')
-    CheckTrue 'sheet has the title' ((Eval 'document.querySelector("#sheet h1").textContent') -eq ([string][char]0x0421 + [char]0x041C + [char]0x0415 + [char]0x0422 + [char]0x0410)) 'title missing'
+    CheckTrue 'sheet has the title' ((Eval 'document.querySelector("#sheet h1").textContent').StartsWith([string][char]0x0417 + [char]0x0410 + [char]0x042F + [char]0x0412 + [char]0x041A + [char]0x0410)) 'title missing'
     Check 'estimate rows' 1 (Eval 'document.querySelectorAll("#sheet table.estimate tbody tr").length - 2')
     CheckTrue 'total row present' ((Eval 'document.querySelector("#sheet .total-row").textContent').Contains('4')) 'total row missing'
     CheckTrue 'signature rows present' ((Eval 'document.querySelector("#sheet table.sign").textContent').Length -gt 20) 'signatures missing'

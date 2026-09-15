@@ -113,7 +113,7 @@ namespace KotovCalc
 
         private void BuildInterface()
         {
-            Text = "Расчет сметы";
+            Text = "Заявки на расчет";
             StartPosition = FormStartPosition.CenterScreen;
             MinimumSize = new Size(1000, 620);
             ClientSize = new Size(1120, 740);
@@ -122,7 +122,7 @@ namespace KotovCalc
             // --- нижняя панель с итогом и кнопками (докbуем первой) ---
             Panel bottom = new Panel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 166;
+            bottom.Height = 186;
             bottom.Paint += delegate(object s, PaintEventArgs e)
             {
                 using (Pen pen = new Pen(Splitter))
@@ -133,7 +133,7 @@ namespace KotovCalc
             _totalLabel.AutoSize = true;
             _totalLabel.Font = _totalFont;
             _totalLabel.ForeColor = Color.FromArgb(20, 70, 130);
-            _totalLabel.Location = new Point(360, 124);
+            _totalLabel.Location = new Point(360, 140);
             _totalLabel.Text = "ИТОГО: 0,00 \u20BD";
             bottom.Controls.Add(_totalLabel);
 
@@ -320,10 +320,10 @@ namespace KotovCalc
             colSum.SortMode = DataGridViewColumnSortMode.NotSortable;
             colSum.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
 
-            // цена для этой сметы — колонка добавляется последней,
+            // цена для этой заявки — колонка добавляется последней,
             // чтобы не менять порядок уже существующих
             _colPrice = new DataGridViewTextBoxColumn();
-            _colPrice.HeaderText = "Цена в смете";
+            _colPrice.HeaderText = "Цена в заявке";
             _colPrice.FillWeight = 15f;
             _colPrice.SortMode = DataGridViewColumnSortMode.NotSortable;
             _colPrice.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
@@ -751,7 +751,7 @@ namespace KotovCalc
                 total += row.Sum;
             }
 
-            // скидка на всю смету
+            // скидка на всю заявку
             decimal discount = AppSettings.ClampDiscount(_fields.Discount);
             decimal discountAmount = 0m;
             if (discount > 0m && total > 0m)
@@ -791,19 +791,19 @@ namespace KotovCalc
             int panelWidth = panel != null ? panel.ClientSize.Width : ClientSize.Width;
             int limit = Math.Max(260, panelWidth - 760);
 
-            _totalLabel.Location = new Point(360, 124);
+            _totalLabel.Location = new Point(360, 140);
             _totalLabel.AutoSize = false;
             _totalLabel.Size = new Size(Math.Max(200, panelWidth - 620), 30);
             _totalLabel.AutoEllipsis = true;
 
-            _countLabel.Location = new Point(14, 118);
+            _countLabel.Location = new Point(14, 132);
             _countLabel.AutoSize = false;
             _countLabel.Size = new Size(Math.Max(200, panelWidth - 780), 20);
             _countLabel.AutoEllipsis = true;
 
             if (_subtotalLabel != null)
             {
-                _subtotalLabel.Location = new Point(360, 122);
+                _subtotalLabel.Location = new Point(360, 136);
                 _subtotalLabel.AutoSize = false;
                 _subtotalLabel.Size = new Size(Math.Max(200, panelWidth - 620), 20);
                 _subtotalLabel.AutoEllipsis = true;
@@ -1013,7 +1013,7 @@ namespace KotovCalc
             }
         }
 
-        /// <summary>Смета текстом — для предпросмотра и текстового файла.</summary>
+        /// <summary>Заявка на расчет текстом — для предпросмотра и текстового файла.</summary>
         private string BuildDocumentText()
         {
             return DocumentBuilder.ToText(BuildEstimateDocument());
@@ -1055,7 +1055,7 @@ namespace KotovCalc
             try
             {
                 Clipboard.SetText(BuildDocumentText());
-                SetStatus("Смета скопирована в буфер обмена — можно вставить в письмо или документ.");
+                SetStatus("Заявка скопирована в буфер обмена — можно вставить в письмо или документ.");
             }
             catch (Exception ex)
             {
@@ -1068,16 +1068,16 @@ namespace KotovCalc
         {
             if (CountPicked() == 0)
             {
-                MessageBox.Show(this, "Не отмечено ни одной услуги.", "Смета",
+                MessageBox.Show(this, "Не отмечено ни одной услуги.", "Заявка на расчет",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             SaveFileDialog dialog = new SaveFileDialog();
-            dialog.Title = "Сохранить смету";
+            dialog.Title = "Сохранить заявку";
             dialog.Filter = "Документ Word (*.docx)|*.docx|Текстовый файл (*.txt)|*.txt|Все файлы (*.*)|*.*";
             dialog.InitialDirectory = PriceBook.StoreFolder;
-            dialog.FileName = "Смета_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".docx";
+            dialog.FileName = "Заявка_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".docx";
             dialog.AddExtension = true;
 
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
@@ -1100,10 +1100,10 @@ namespace KotovCalc
                     File.WriteAllText(dialog.FileName, BuildDocumentText(), new UTF8Encoding(true));
                 }
 
-                SetStatus("Смета сохранена: " + dialog.FileName);
+                SetStatus("Заявка сохранена: " + dialog.FileName);
 
-                if (MessageBox.Show(this, "Смета сохранена.\n\nОткрыть файл?",
-                        "Смета", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                if (MessageBox.Show(this, "Заявка на расчет сохранена.\n\nОткрыть файл?",
+                        "Заявка на расчет", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
                     Process.Start(new ProcessStartInfo(dialog.FileName) { UseShellExecute = true });
                 }
@@ -1111,7 +1111,7 @@ namespace KotovCalc
             catch (Exception ex)
             {
                 MessageBox.Show(this, "Не удалось сохранить файл:\n" + ex.Message,
-                    "Смета", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    "Заявка на расчет", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 

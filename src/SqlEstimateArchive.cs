@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
-//  Архив смет в PostgreSQL: таблица smeta_estimates.
+//  Архив заявок в PostgreSQL: таблица smeta_estimates.
 //
-//  Номер сметы нумеруется в рамках года, дата — дата сохранения.
-//  Позиции сметы хранятся в поле jsonb.
+//  Номер заявки нумеруется в рамках года, дата — дата сохранения.
+//  Позиции заявки хранятся в поле jsonb.
 // ---------------------------------------------------------------------------
 
 using System;
@@ -22,7 +22,7 @@ namespace KotovCalc
             _info = info;
         }
 
-        public string Title { get { return "Сметы в базе данных: " + _info.Describe(); } }
+        public string Title { get { return "Заявки в базе данных: " + _info.Describe(); } }
 
         private PgClient Open()
         {
@@ -31,7 +31,7 @@ namespace KotovCalc
             return client;
         }
 
-        /// <summary>Создание таблицы смет.</summary>
+        /// <summary>Создание таблицы заявок.</summary>
         public static string CreateSchema(PgClient client)
         {
             string command =
@@ -47,7 +47,7 @@ namespace KotovCalc
             return client.Execute(command) ? null : client.LastError;
         }
 
-        /// <summary>Следующий номер сметы в рамках года берётся из базы.</summary>
+        /// <summary>Следующий номер заявки в рамках года берётся из базы.</summary>
         public string NextNumber(int year)
         {
             using (PgClient client = Open())
@@ -144,7 +144,7 @@ namespace KotovCalc
                     estimate.Saved.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
                     estimate.Customer ?? "", estimate.Discount, ItemsJson(estimate));
 
-                if (!ok) throw new PgException(client.LastError ?? "Не удалось сохранить смету.");
+                if (!ok) throw new PgException(client.LastError ?? "Не удалось сохранить заявку.");
             }
         }
 
@@ -153,7 +153,7 @@ namespace KotovCalc
             using (PgClient client = Open())
             {
                 bool ok = client.Execute("DELETE FROM smeta_estimates WHERE number = $1", estimate.Number);
-                if (!ok) throw new PgException(client.LastError ?? "Не удалось удалить смету.");
+                if (!ok) throw new PgException(client.LastError ?? "Не удалось удалить заявку.");
                 return true;
             }
         }

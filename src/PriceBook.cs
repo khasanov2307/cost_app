@@ -4,7 +4,7 @@
 //  Прайс-лист хранится внутри приложения:
 //    * исходный (заводской) набор цен зашит в exe как ресурс;
 //    * изменения, сделанные в редакторе, сохраняются в личный профиль
-//      пользователя — %LOCALAPPDATA%\Расчет сметы\prices.xml.
+//      пользователя — %LOCALAPPDATA%\Расчет заявки\prices.xml.
 //  Отдельный файл рядом с программой не нужен: её можно положить в любую
 //  папку (в том числе в Program Files) без прав администратора.
 //
@@ -27,7 +27,7 @@ namespace KotovCalc
         private const string SeedResource = "KotovCalc.Seed.tsv";
 
         /// <summary>Имя папки с данными программы в профиле пользователя.</summary>
-        private const string AppDataFolderName = "Расчет сметы";
+        private const string AppDataFolderName = "Расчет заявки";
 
         private const string DefaultGroup = "Прочее";
         private const string DefaultUnit = "шт.";
@@ -151,7 +151,7 @@ namespace KotovCalc
             using (XmlWriter writer = XmlWriter.Create(temp, settings))
             {
                 writer.WriteStartDocument();
-                writer.WriteComment(" Прайс-лист программы «Расчет сметы». " +
+                writer.WriteComment(" Прайс-лист программы «Расчет заявки». " +
                                     "Файл создаётся автоматически, править его вручную не нужно. ");
                 writer.WriteStartElement("PriceList");
                 writer.WriteAttributeString("version", "1");
@@ -361,7 +361,7 @@ namespace KotovCalc
         public static void ExportTsv(string path, IList<ServiceItem> items)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("# Прайс-лист программы «Расчет сметы» (экспорт).");
+            sb.AppendLine("# Прайс-лист программы «Расчет заявки» (экспорт).");
             sb.AppendLine("# Разделитель колонок — знак табуляции.");
             sb.AppendLine("# Группа\tАртикул\tНаименование\tЕд. изм.\tЦена");
 

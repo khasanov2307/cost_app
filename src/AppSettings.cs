@@ -17,9 +17,9 @@ namespace KotovCalc
     internal sealed class AppSettings
     {
         public string Theme = "light";          // light | dark
-        public string Number = "";              // номер сметы
+        public string Number = "";              // номер заявки
         public string Customer = "";            // ФИО заказчика
-        public decimal Discount = 0m;           // скидка на всю смету, %
+        public decimal Discount = 0m;           // скидка на всю заявку, %
         public string LastTemplate = "";
         public string Logo = "";                // путь к файлу логотипа компании
 
@@ -72,7 +72,7 @@ namespace KotovCalc
             try
             {
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine("# Настройки программы «Расчет сметы». Файл создаётся автоматически.");
+                sb.AppendLine("# Настройки программы «Расчет заявки». Файл создаётся автоматически.");
                 sb.AppendLine("theme=" + (Theme == "dark" ? "dark" : "light"));
                 sb.AppendLine("number=" + Clean(Number));
                 sb.AppendLine("customer=" + Clean(Customer));

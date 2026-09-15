@@ -126,7 +126,7 @@ try {
     [void](Eval 'WebEstimate.showPreview()')
     Check 'картинка в смете есть' 1 (Eval 'document.querySelectorAll("#sheet img.logo").length')
     CheckTrue 'источник картинки — данные логотипа' ((Eval 'document.querySelector("#sheet img.logo").src').StartsWith('data:image/png')) 'не data:'
-    CheckTrue 'заголовок сметы на месте' ((Eval 'document.querySelector("#sheet h1").textContent') -eq ([string][char]0x0421 + [char]0x041C + [char]0x0415 + [char]0x0422 + [char]0x0410)) 'нет заголовка'
+    CheckTrue 'заголовок заявки на месте' ((Eval 'document.querySelector("#sheet h1").textContent').StartsWith([string][char]0x0417 + [char]0x0410 + [char]0x042F + [char]0x0412 + [char]0x041A + [char]0x0410)) 'нет заголовка'
     CheckTrue 'подпись к картинке задана' ((Eval 'document.querySelector("#sheet img.logo").alt').Length -gt 5) 'нет alt'
 
     Write-Host ''

@@ -1,6 +1,6 @@
 'use strict';
 // ---------------------------------------------------------------------------
-//  Веб-версия «Расчет сметы»: логика страницы.
+//  Веб-версия «Расчет заявки»: логика страницы.
 //  Данные прайс-листа встраиваются в HTML как window.SEED_PRICES.
 // ---------------------------------------------------------------------------
 
@@ -241,7 +241,7 @@ function render() {
                 '<td class="qty"><input type="text" inputmode="decimal" data-act="qty" value="' +
                     (picked ? number(mark.quantity) : '') + '" placeholder="1"></td>' +
                 '<td class="price"><input type="text" inputmode="decimal" data-act="price" value="' +
-                    money(price) + '" class="right' + (changed ? ' changed' : '') + '" title="Цена для этой сметы"></td>' +
+                    money(price) + '" class="right' + (changed ? ' changed' : '') + '" title="Цена для этой заявки"></td>' +
                 '<td class="sum">' + rowSum + '</td>' +
                 '</tr>';
         }
@@ -326,10 +326,10 @@ function renderEditor() {
     html += '</tbody></table>';
     host.innerHTML = html;
 }
-// ------------------------------------------------------------- смета
+// ------------------------------------------------------------- заявока
 
 function documentTitle() {
-    var text = 'СМЕТА';
+    var text = 'ЗАЯВКА НА РАСЧЕТ';
     return text;
 }
 
@@ -345,7 +345,7 @@ function buildEstimateText() {
     var summary = totals();
     var lines = [];
 
-    lines.push('СМЕТА');
+    lines.push('ЗАЯВКА НА РАСЧЕТ');
     lines.push(documentSubtitle());
     lines.push(new Array(87).join('-'));
 
@@ -386,7 +386,7 @@ function buildEstimateHtml() {
         : '';
 
     var html = '<div class="head">' + logo + '<div class="head-text">' +
-        '<h1>СМЕТА</h1>' +
+        '<h1>ЗАЯВКА НА РАСЧЕТ</h1>' +
         '<p class="meta">' + escapeHtml(documentSubtitle()) +
         '   \u2022   позиций: ' + rows.length + '</p></div></div>' +
         '<table class="items estimate"><thead><tr>' +
@@ -432,7 +432,7 @@ function buildEstimateHtml() {
     return html;
 }
 
-// --------------------------------------------- сохранение сметы в Word
+// --------------------------------------------- сохранение заявки в Word
 
 function utf8(text) {
     var source = unescape(encodeURIComponent(String(text)));
@@ -610,7 +610,7 @@ function buildDocxParts() {
     var document = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
         (logo ? logoParagraph(logo) : '') +
-        paragraph('СМЕТА', 'Title', 'center') +
+        paragraph('ЗАЯВКА НА РАСЧЕТ', 'Title', 'center') +
         paragraph(documentSubtitle(), 'Subtitle', 'center') +
         table + foot + paragraph('', 'Normal', null) + sign + section +
         '</w:body></w:document>';
@@ -686,8 +686,8 @@ function exportDocx() {
         return;
     }
 
-    downloadBlob('Смета.docx', zipStore(buildDocxParts()));
-    setStatus('Смета сохранена документом Word: Смета.docx');
+    downloadBlob('Заявка на расчет.docx', zipStore(buildDocxParts()));
+    setStatus('Заявка на расчет сохранена документом Word: Заявка на расчет.docx');
 }
 // ------------------------------------------------------- хранение данных
 
@@ -848,7 +848,7 @@ function applyExchange(data) {
 }
 
 function exportData() {
-    download('Данные_сметы.smeta', JSON.stringify(buildExchange(), null, 2), 'application/json;charset=utf-8');
+    download('Данные_заявки.smeta', JSON.stringify(buildExchange(), null, 2), 'application/json;charset=utf-8');
     setStatus('Данные выгружены в файл: прайс, наборы и реквизиты.');
 }
 
@@ -1309,7 +1309,7 @@ function serverPush(part) {
                 chosen: state.chosen,
                 collapsing: state.collapsing
             }).then(function (answer) {
-                reportServerAnswer(answer, 'смета');
+                reportServerAnswer(answer, 'заявока');
             });
         }
     }, 400);
@@ -1399,7 +1399,7 @@ function clearPrices(givenAnswer) {
         ? givenAnswer
         : window.prompt(
             'Будут удалены все позиции прайс-листа: ' + total + '.\n' +
-            'Отметки в смете при этом сбрасываются.\n\n' +
+            'Отметки в заявке при этом сбрасываются.\n\n' +
             'Для подтверждения введите слово ПОЛНОСТЬЮ:');
 
     if (answer === null) { setStatus('Очистка отменена.'); return false; }
@@ -1456,7 +1456,7 @@ function undoClear() {
     return true;
 }
 function exportCsv() {
-    var lines = ['# Прайс-лист программы «Расчет сметы»', '# Разделитель колонок — знак табуляции',
+    var lines = ['# Прайс-лист программы «Расчет заявки»', '# Разделитель колонок — знак табуляции',
                  '# Группа\tАртикул\tНаименование\tЕд. изм.\tЦена'];
     for (var i = 0; i < state.items.length; i++) {
         var item = state.items[i];
@@ -1810,13 +1810,13 @@ function bind() {
     document.getElementById('printSheet').addEventListener('click', function () { window.print(); });
 
     document.getElementById('copyText').addEventListener('click', function () {
-        writeToClipboard(buildEstimateText(), 'Смета');
+        writeToClipboard(buildEstimateText(), 'Заявка на расчет');
     });
 
     document.getElementById('downloadText').addEventListener('click', function () {
         if (!chosenRows().length) { setStatus('Сначала отметьте нужные услуги.'); return; }
-        download('Смета.txt', buildEstimateText(), 'text/plain;charset=utf-8');
-        setStatus('Смета сохранена текстовым файлом.');
+        download('Заявка на расчет.txt', buildEstimateText(), 'text/plain;charset=utf-8');
+        setStatus('Заявка на расчет сохранена текстовым файлом.');
     });
 
     document.getElementById('overlay').addEventListener('click', function (event) {

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Точка входа приложения «Расчет сметы».
+//  Точка входа приложения «Расчет заявки».
 // ---------------------------------------------------------------------------
 
 using System;
@@ -26,7 +26,7 @@ namespace KotovCalc
             }
             catch { /* если культура недоступна, остаются системные настройки */ }
 
-            // Ключ --estimate <файл>: сформировать смету (Word) по всему прайс-листу без окна.
+            // Ключ --estimate <файл>: сформировать заявку (Word) по всему прайс-листу без окна.
             // Удобно для автоматизации и проверок.
             if (args != null && args.Length >= 2 &&
                 string.Equals(args[0], "--estimate", StringComparison.OrdinalIgnoreCase))
@@ -40,7 +40,7 @@ namespace KotovCalc
                 MessageBox.Show(
                     "Произошла непредвиденная ошибка:\n\n" + e.Exception.Message +
                     "\n\nПрограмма продолжит работу.",
-                    "Расчет сметы", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    "Расчет заявки", MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
 
             // Режим работы: файлы на этом компьютере или база данных.
@@ -139,7 +139,7 @@ namespace KotovCalc
                 "Подключение", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        /// <summary>Формирование сметы по всему прайс-листу в PDF. Возвращает код выхода.</summary>
+        /// <summary>Формирование заявки по всему прайс-листу в PDF. Возвращает код выхода.</summary>
         private static int MakeEstimate(string path)
         {
             try
@@ -165,14 +165,14 @@ namespace KotovCalc
                 EstimateDocument document = DocumentBuilder.Build(rows, fields, "", DateTime.Now);
                 EstimateDocx.Save(path, document, settings.Logo);
 
-                Console.WriteLine("Смета сохранена: " + Path.GetFullPath(path) +
+                Console.WriteLine("Заявка сохранена: " + Path.GetFullPath(path) +
                                   "  (" + document.PositionCount + " позиций, " +
                                   Fmt.Money(document.Total) + ")");
                 return 0;
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("Не удалось сформировать смету: " + ex.Message);
+                Console.Error.WriteLine("Не удалось сформировать заявку: " + ex.Message);
                 return 1;
             }
         }

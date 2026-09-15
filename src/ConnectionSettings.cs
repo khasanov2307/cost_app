@@ -48,7 +48,7 @@ namespace KotovCalc
             get { return _store; }
         }
 
-        /// <summary>Действующий архив смет: файлы или база данных.</summary>
+        /// <summary>Действующий архив заявок: файлы или база данных.</summary>
         public static IEstimateArchive Archive
         {
             get { return _archive; }
@@ -196,7 +196,7 @@ namespace KotovCalc
             try
             {
                 StringBuilder text = new StringBuilder();
-                text.AppendLine("# Параметры подключения программы «Расчет сметы».");
+                text.AppendLine("# Параметры подключения программы «Расчет заявки».");
                 text.AppendLine("# Пароль базы данных здесь не хранится — он запрашивается при запуске.");
 
                 foreach (KeyValuePair<string, string> pair in values)

@@ -131,8 +131,8 @@ internal static class Harness4
                 CheckTrue("разметка рисунка есть", body.Contains("wordprocessingDrawing"), "нет разметки");
                 CheckTrue("ссылка rId2 в тексте", body.Contains("r:embed=\"rId2\""), "нет ссылки");
                 CheckTrue("размер в EMU задан", body.Contains("wp:extent"), "нет размеров");
-                CheckTrue("заголовок сметы на месте", body.Contains("СМЕТА"), "нет заголовка");
-                CheckTrue("номер сметы на месте", body.Contains("5/2026"), "нет номера");
+                CheckTrue("заголовок заявки на месте", body.Contains("ЗАЯВКА НА РАСЧЕТ"), "нет заголовка");
+                CheckTrue("номер заявки на месте", body.Contains("5/2026"), "нет номера");
             }
 
             using (ZipArchive zip = ZipFileOpen(withoutLogo))

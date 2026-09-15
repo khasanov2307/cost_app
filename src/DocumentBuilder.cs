@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Построение документа сметы: заголовок, реквизиты, таблица позиций,
+//  Построение документа заявки: заголовок, реквизиты, таблица позиций,
 //  скидка и итог, строки для подписей.
 //
 //  Результат — структура (таблицы и абзацы). Из неё собираются и документ
@@ -32,10 +32,10 @@ namespace KotovCalc
         public const string Total = "TotalRow";
     }
 
-    /// <summary>Готовый документ сметы.</summary>
+    /// <summary>Готовый документ заявки.</summary>
     internal sealed class EstimateDocument
     {
-        public string Title = "СМЕТА";
+        public string Title = "ЗАЯВКА НА РАСЧЕТ";
         public string Subtitle = "";
 
         /// <summary>Таблица позиций.</summary>
@@ -63,7 +63,7 @@ namespace KotovCalc
 
     internal static class DocumentBuilder
     {
-        /// <summary>Сборка документа сметы из отмеченных позиций.</summary>
+        /// <summary>Сборка документа заявки из отмеченных позиций.</summary>
         public static EstimateDocument Build(IList<EstimateRow> rows, DocumentFields fields,
                                              string executor, DateTime stamp)
         {
@@ -189,7 +189,7 @@ namespace KotovCalc
                 sb.AppendLine(line);
 
             if (document.DiscountAmount > 0m)
-                sb.AppendLine("* цена изменена в смете");
+                sb.AppendLine("* цена изменена в заявке");
 
             sb.AppendLine();
             sb.AppendLine(document.LeftSign + "        " + document.RightSign);

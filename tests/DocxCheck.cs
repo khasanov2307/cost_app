@@ -183,7 +183,7 @@ internal static class DocxCheck
         foreach (XmlNode node in texts) text.Append(node.InnerText).Append('\n');
         string all = text.ToString();
 
-        CheckTrue("[" + name + "] есть заголовок СМЕТА", all.Contains("СМЕТА"), "нет заголовка");
+        CheckTrue("[" + name + "] есть заголовок ЗАЯВКА НА РАСЧЕТ", all.Contains("ЗАЯВКА НА РАСЧЕТ"), "нет заголовка");
         CheckTrue("[" + name + "] есть шапка таблицы",
                   all.Contains("Наименование") && all.Contains("Кол-во") && all.Contains("Всего"),
                   "нет шапки таблицы");

@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
 //  Дополнительные возможности главного окна:
 //    * реквизиты документа (номер и ФИО заказчика) и скидка;
-//    * изменение цены позиции прямо в смете;
-//    * предпросмотр сметы и сохранение в Word или текстом;
+//    * изменение цены позиции прямо в заявке;
+//    * предпросмотр заявки и сохранение в Word или текстом;
 //    * шаблоны наборов услуг с поиском;
 //    * светлая и тёмная тема оформления;
 //    * выгрузка и загрузка всех данных одним файлом.
@@ -45,7 +45,7 @@ namespace KotovCalc
         private Image _logoIcon;            // значок логотипа для нижней панели
         private WebService _web;                   // сервис для веб-версии
 
-        // цена для этой сметы: колонка добавляется последней
+        // цена для этой заявки: колонка добавляется последней
         private DataGridViewTextBoxColumn _colPrice;
         private const int ColPriceEdit = 6;
 
@@ -100,8 +100,8 @@ namespace KotovCalc
             _templateSearch.TextChanged += Template_Selected;
             top.Controls.Add(_templateSearch);
 
-            // --- вторая строка: номер сметы, заказчик и скидка ---
-            Label lblNumber = MakeLabel("Номер сметы:");
+            // --- вторая строка: номер заявки, заказчик и скидка ---
+            Label lblNumber = MakeLabel("Номер заявки:");
             lblNumber.Location = new Point(14, 92);
             top.Controls.Add(lblNumber);
 
@@ -147,13 +147,13 @@ namespace KotovCalc
             _btnTheme.Click += delegate { ToggleTheme(); };
             bottom.Controls.Add(_btnTheme);
 
-            // сметы: сохранение и открытие
-            Button btnSaveEstimate = MakeButton("Сохранить смету", 168);
+            // заявки: сохранение и открытие
+            Button btnSaveEstimate = MakeButton("Сохранить заявку", 168);
             btnSaveEstimate.Location = new Point(14, 43);
             btnSaveEstimate.Click += delegate { SaveEstimate(); };
             bottom.Controls.Add(btnSaveEstimate);
 
-            Button btnOpenEstimate = MakeButton("Открыть смету", 158);
+            Button btnOpenEstimate = MakeButton("Открыть заявку", 158);
             btnOpenEstimate.Location = new Point(190, 43);
             btnOpenEstimate.Click += delegate { OpenEstimate(); };
             bottom.Controls.Add(btnOpenEstimate);
@@ -494,7 +494,7 @@ namespace KotovCalc
 
         // ------------------------------------------------------ предпросмотр
 
-        /// <summary>Окно предпросмотра сметы.</summary>
+        /// <summary>Окно предпросмотра заявки.</summary>
         // ---------------------------------------------- логотип компании
 
         /// <summary>Выбор файла логотипа для печатной формы.</summary>
@@ -507,7 +507,7 @@ namespace KotovCalc
         private void ChooseLogo()
         {
             OpenFileDialog dialog = new OpenFileDialog();
-            dialog.Title = "Логотип компании для сметы";
+            dialog.Title = "Логотип компании для заявки";
             dialog.Filter = "Изображения (*.png;*.jpg;*.jpeg;*.gif)|*.png;*.jpg;*.jpeg;*.gif|Все файлы (*.*)|*.*";
             dialog.InitialDirectory = PriceBook.StoreFolder;
 
@@ -670,7 +670,7 @@ namespace KotovCalc
         {
             if (CountPicked() == 0)
             {
-                MessageBox.Show(this, "Не отмечено ни одной услуги.", "Предпросмотр сметы",
+                MessageBox.Show(this, "Не отмечено ни одной услуги.", "Предпросмотр заявки",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -679,7 +679,7 @@ namespace KotovCalc
 
             using (Form dialog = new Form())
             {
-                dialog.Text = "Предпросмотр сметы";
+                dialog.Text = "Предпросмотр заявки";
                 dialog.StartPosition = FormStartPosition.CenterParent;
                 dialog.MinimumSize = new Size(780, 540);
                 dialog.ClientSize = new Size(920, 660);
@@ -719,7 +719,7 @@ namespace KotovCalc
                     try
                     {
                         Clipboard.SetText(text);
-                        SetStatus("Смета скопирована в буфер обмена.");
+                        SetStatus("Заявка скопирована в буфер обмена.");
                     }
                     catch (Exception ex)
                     {
@@ -738,7 +738,7 @@ namespace KotovCalc
                 hint.AutoSize = true;
                 hint.ForeColor = Color.FromArgb(120, 130, 145);
                 hint.Location = new Point(500, 17);
-                hint.Text = "Так будет выглядеть готовая смета";
+                hint.Text = "Так будет выглядеть готовая заявка";
                 actions.Controls.Add(hint);
 
                 dialog.Controls.Add(view);
@@ -771,7 +771,7 @@ namespace KotovCalc
             dialog.Filter = "Данные программы (*" + DataExchange.Extension + ")|*" + DataExchange.Extension +
                             "|Все файлы (*.*)|*.*";
             dialog.InitialDirectory = PriceBook.StoreFolder;
-            dialog.FileName = "Смета_данные_" + DateTime.Now.ToString("yyyy-MM-dd") + DataExchange.Extension;
+            dialog.FileName = "Заявки_данные_" + DateTime.Now.ToString("yyyy-MM-dd") + DataExchange.Extension;
 
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
@@ -877,13 +877,13 @@ namespace KotovCalc
 
         // -------------------------------------------------- документ и цены
 
-        /// <summary>Документ сметы по текущим отметкам и реквизитам.</summary>
+        /// <summary>Документ заявки по текущим отметкам и реквизитам.</summary>
         private EstimateDocument BuildEstimateDocument()
         {
             return DocumentBuilder.Build(_rows, _fields, "", DateTime.Now);
         }
 
-        /// <summary>Разбор цены, введённой в смете.</summary>
+        /// <summary>Разбор цены, введённой в заявке.</summary>
         private static bool TryParsePrice(string text, out decimal price)
         {
             price = 0m;

@@ -104,14 +104,14 @@ namespace KotovCalc
         }
     }
 
-    /// <summary>Позиция сметы: данные прайса, отметка, количество и цена для этой сметы.</summary>
+    /// <summary>Позиция заявки: данные прайса, отметка, количество и цена для этой заявки.</summary>
     internal sealed class EstimateRow
     {
         public ServiceItem Item;
         public bool Selected;
         public decimal Quantity = 1m;
 
-        /// <summary>Цена, изменённая прямо в смете (null — берётся цена прайса).</summary>
+        /// <summary>Цена, изменённая прямо в заявке (null — берётся цена прайса).</summary>
         public decimal? PriceOverride;
 
         public EstimateRow(ServiceItem item) { Item = item; }
@@ -131,12 +131,12 @@ namespace KotovCalc
         public decimal Sum { get { return Selected ? Price * Quantity : 0m; } }
     }
 
-    /// <summary>Реквизиты документа, который формируется из сметы.</summary>
+    /// <summary>Реквизиты документа, который формируется из заявки.</summary>
     internal sealed class DocumentFields
     {
-        public string Number = "";      // номер сметы
+        public string Number = "";      // номер заявки
         public string Customer = "";    // ФИО заказчика
-        public decimal Discount;        // скидка на всю смету, %
+        public decimal Discount;        // скидка на всю заявку, %
 
         public void Normalize()
         {

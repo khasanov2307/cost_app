@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Расчет сметы</title>
+<title>Расчет заявки</title>
 <style>
 /* ------------------------------------------------------------------ */
-/*  Веб-версия «Расчет сметы». Стили страницы.                         */
+/*  Веб-версия «Расчет заявки». Стили страницы.                         */
 /* ------------------------------------------------------------------ */
 
 :root {
@@ -292,7 +292,7 @@ button:focus-visible, .file-button:focus-visible { outline: 2px solid var(--acce
 }
 .file-button:hover { background: var(--btn-bg-hover); border-color: var(--accent); }
 
-/* ------------------------------------------------------- смета */
+/* ------------------------------------------------------- заявока */
 
 .overlay {
     position: fixed;
@@ -353,16 +353,16 @@ table.sign td { padding-top: 22px; color: var(--text); }
 
 <div class="wrap">
     <header class="top">
-        <h1>Расчет сметы</h1>
+        <h1>Расчет заявки</h1>
         <span class="hint" id="storageHint">Веб-версия: данные хранятся в самом браузере</span>
     </header>
 
     <div class="tabs no-print">
-        <button type="button" class="tab active" id="calcTab">Смета</button>
+        <button type="button" class="tab active" id="calcTab">Заявка на расчет</button>
         <button type="button" class="tab" id="priceTab">Прайс-лист</button>
     </div>
 
-    <!-- ------------------------------------------------ расчёт сметы -->
+    <!-- ------------------------------------------------ расчёт заявки -->
     <div id="panelCalc">
         <div class="toolbar no-print">
             <input type="search" id="search" placeholder="Поиск по наименованию, артикулу или разделу">
@@ -387,7 +387,7 @@ table.sign td { padding-top: 22px; color: var(--text); }
             </label>
         </div>
         <div class="toolbar doc-row">
-            <label for="docNumber">Номер сметы:</label>
+            <label for="docNumber">Номер заявки:</label>
             <input type="text" id="docNumber" placeholder="например 12/2026">
             <label for="docCustomer">Заказчик (ФИО):</label>
             <input type="text" id="docCustomer" placeholder="Фамилия Имя Отчество">
@@ -434,11 +434,11 @@ table.sign td { padding-top: 22px; color: var(--text); }
         <button type="button" id="clearAll">Сброс отметок</button>
         <button type="button" id="preview">Предпросмотр</button>
         <button type="button" id="downloadText">Сохранить текстом</button>
-        <button type="button" class="primary" id="estimate">Сформировать смету</button>
+        <button type="button" class="primary" id="estimate">Сформировать заявку</button>
     </span>
 </footer>
 
-<!-- ------------------------------------------------------- смета -->
+<!-- ------------------------------------------------------- заявока -->
 <div class="overlay" id="overlay">
     <div class="sheet">
         <div class="tools">

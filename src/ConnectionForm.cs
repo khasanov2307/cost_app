@@ -49,7 +49,7 @@ namespace KotovCalc
 
         private void Build()
         {
-            Text = "Подключение — Расчет сметы";
+            Text = "Подключение — Заявки на расчет";
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -59,7 +59,7 @@ namespace KotovCalc
             Font = new Font("Segoe UI", 9.75f, FontStyle.Regular, GraphicsUnit.Point);
 
             Label header = new Label();
-            header.Text = "Где хранить прайс-лист и сметы";
+            header.Text = "Где хранить прайс-лист и заявки";
             header.Font = _bold;
             header.AutoSize = true;
             header.Location = new Point(16, 14);
@@ -124,7 +124,7 @@ namespace KotovCalc
 
             top += 26;
             _webEnabled = new CheckBox();
-            _webEnabled.Text = "Открыть доступ странице «Смета.html» к этим же данным";
+            _webEnabled.Text = "Открыть доступ странице «Заявка на расчет.html» к этим же данным";
             _webEnabled.AutoSize = true;
             _webEnabled.Location = new Point(20, top);
             _webEnabled.CheckedChanged += delegate { UpdateEnabled(); };
@@ -324,7 +324,7 @@ namespace KotovCalc
 
         private void Build()
         {
-            Text = _createFirst ? "Создание пользователя — Расчет сметы" : "Вход — Расчет сметы";
+            Text = _createFirst ? "Создание пользователя — Заявки на расчет" : "Вход — Заявки на расчет";
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;

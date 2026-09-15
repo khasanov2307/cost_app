@@ -1,12 +1,12 @@
 // ---------------------------------------------------------------------------
-//  Сохранение сметы в формате Word (.docx) без внешних библиотек.
+//  Сохранение заявки в формате Word (.docx) без внешних библиотек.
 //
 //  Файл .docx — это ZIP-архив с XML внутри (формат OOXML). Архив собирается
 //  средствами System.IO.Compression, разметка — обычным текстом, поэтому
 //  Word, «Word Online» и LibreOffice открывают документ без замечаний.
 //
 //  Содержимое документа готовит DocumentBuilder — тот же, что и для
-//  предпросмотра в программе, поэтому вид сметы совпадает.
+//  предпросмотра в программе, поэтому вид заявки совпадает.
 // ---------------------------------------------------------------------------
 
 using System;
@@ -20,14 +20,14 @@ namespace KotovCalc
 {
     internal static class EstimateDocx
     {
-        /// <summary>Создание документа Word со сметой.</summary>
-        /// <summary>Создание документа Word со сметой.</summary>
+        /// <summary>Создание документа Word со заявкой.</summary>
+        /// <summary>Создание документа Word со заявкой.</summary>
         public static void Save(string path, EstimateDocument document)
         {
             Save(path, document, null);
         }
 
-        /// <summary>Создание документа Word со сметой и логотипом компании.</summary>
+        /// <summary>Создание документа Word со заявкой и логотипом компании.</summary>
         public static void Save(string path, EstimateDocument document, string logoPath)
         {
             Logo logo = Logo.Read(logoPath);

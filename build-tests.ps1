@@ -19,6 +19,7 @@ $out4 = Join-Path $test 'Harness3.exe'
 $out5 = Join-Path $test 'Harness4.exe'
 $out6 = Join-Path $test 'Harness6.exe'
 $out7 = Join-Path $test 'Harness8.exe'
+$out8 = Join-Path $test 'Harness9.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
 $csc = @(
@@ -74,6 +75,11 @@ Write-Host '==> Compiling the service host' -ForegroundColor Cyan
     (Join-Path $test 'Harness8.cs')
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
+Write-Host '==> Compiling the payment checks' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:Harness9 "/out:$out8" $sourceList `
+    (Join-Path $test 'Harness9.cs')
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
+
 Write-Host '==> Compiling the store checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:Harness6 "/out:$out6" $sourceList `
     (Join-Path $test 'Harness6.cs')
@@ -125,6 +131,16 @@ Write-Host '==> Running the store checks' -ForegroundColor Cyan
 $databaseReady = $false
 try {
     $probe = New-Object System.Net.Sockets.TcpClient
+
+Write-Host '==> Running the payment checks' -ForegroundColor Cyan
+if ($databaseReady) {
+    & $out8 127.0.0.1 smeta smeta smeta
+    $code = $LASTEXITCODE
+    if ($code -ne 0) { throw "Payment checks failed with exit code $code" }
+}
+else {
+    Write-Host '    PostgreSQL is not available - payment checks skipped'
+}
     $probe.Connect("127.0.0.1", 5432)
     $probe.Close()
     $databaseReady = $true

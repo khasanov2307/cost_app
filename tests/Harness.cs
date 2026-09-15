@@ -87,7 +87,7 @@ internal static class Harness
         Check("колонка 3", "Цена", grid.Columns[3].HeaderText);
         Check("колонка 4", "Количество", grid.Columns[4].HeaderText);
         Check("колонка 5", "Всего", grid.Columns[5].HeaderText);
-        Check("колонка 6 (цена в смете)", "Цена в смете", grid.Columns[6].HeaderText);
+        Check("колонка 6 (цена в смете)", "Цена в заявке", grid.Columns[6].HeaderText);
         Check("колонка галочек без надписи", "", grid.Columns[0].HeaderText);
 
         // отметить группу "Диагностика" через публичное поведение checkbox-ячейки
@@ -150,9 +150,9 @@ internal static class Harness
         string doc = (string)typeof(MainForm)
             .GetMethod("BuildDocumentText", BindingFlags.Instance | BindingFlags.NonPublic)
             .Invoke(form, null);
-        Check("смета содержит шапку", true, doc.Contains("СМЕТА"));
-        Check("смета содержит итог", true, doc.Contains("ИТОГО К ОПЛАТЕ:"));
-        Check("смета содержит отмеченную услугу", true, doc.Contains("Компьютерная диагностика"));
+        Check("заявка содержит шапку", true, doc.Contains("ЗАЯВКА НА РАСЧЕТ"));
+        Check("заявка содержит итог", true, doc.Contains("ИТОГО К ОПЛАТЕ:"));
+        Check("заявка содержит отмеченную услугу", true, doc.Contains("Компьютерная диагностика"));
 
         Console.WriteLine("[9] Сохранение и восстановление отметок");
         MethodInfo save = typeof(MainForm).GetMethod("SaveSession",

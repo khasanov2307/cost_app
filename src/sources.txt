@@ -11,7 +11,9 @@ ConnectionForm.cs
 SessionEstimateStore.cs
 DocumentBuilder.cs
 CompanyLogo.cs
+CashBook.cs
 EstimateArchive.cs
+SqlCashBook.cs
 SqlEstimateArchive.cs
 PriceBook.cs
 EstimateDocx.cs

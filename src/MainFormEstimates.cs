@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
-//  Сохранение сметы и открытие сохранённой сметы.
+//  Сохранение заявки и открытие сохранённой заявки.
 //
 //  Номер присваивается автоматически и нумеруется в рамках года,
-//  дата — дата сохранения. Открытая смета восстанавливает отметки,
+//  дата — дата сохранения. Открытая заявока восстанавливает отметки,
 //  количества и цены позиций каталога.
 // ---------------------------------------------------------------------------
 
@@ -15,9 +15,9 @@ namespace KotovCalc
 {
     internal sealed partial class MainForm
     {
-        // ------------------------------------------------ сохранение сметы
+        // ------------------------------------------------ сохранение заявки
 
-        /// <summary>Следующий номер сметы в рамках текущего года.</summary>
+        /// <summary>Следующий номер заявки в рамках текущего года.</summary>
         private string NextEstimateNumber()
         {
             int year = DateTime.Now.Year;
@@ -28,13 +28,13 @@ namespace KotovCalc
             return EstimateNumbering.Next(ConnectionSettings.Archive.Load(), year);
         }
 
-        /// <summary>Сохранение текущей сметы в архив.</summary>
+        /// <summary>Сохранение текущей заявки в архив.</summary>
         private void SaveEstimate()
         {
             if (CountPicked() == 0)
             {
-                MessageBox.Show(this, "Отметьте услуги — тогда смету можно сохранить.",
-                    "Сохранение сметы", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, "Отметьте услуги — тогда заявку можно сохранить.",
+                    "Сохранение заявки", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -45,8 +45,8 @@ namespace KotovCalc
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Не удалось определить номер сметы:\n" + ex.Message,
-                    "Сохранение сметы", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, "Не удалось определить номер заявки:\n" + ex.Message,
+                    "Сохранение заявки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -54,12 +54,12 @@ namespace KotovCalc
             string customer = _fields.Customer;
 
             DialogResult answer = MessageBox.Show(this,
-                "Сохранить смету?\n\n" +
+                "Сохранить заявку?\n\n" +
                 "Номер: " + number + "  (нумерация в рамках " + saved.Year + " года)\n" +
                 "Дата: " + saved.ToString("dd.MM.yyyy HH:mm", Fmt.Ru) +
                 (customer.Length > 0 ? "\nЗаказчик: " + customer : "") + "\n" +
                 "Позиций: " + CountPicked() + "   •   скидка: " + Fmt.Qty(_fields.Discount) + " %",
-                "Сохранение сметы", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
+                "Сохранение заявки", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
 
             if (answer != DialogResult.OK) return;
 
@@ -99,28 +99,28 @@ namespace KotovCalc
             {
                 ConnectionSettings.Archive.Save(estimate);
 
-                // номер сметы попадает в реквизиты документа
+                // номер заявки попадает в реквизиты документа
                 _fields.Number = number;
                 _restoring = true;
                 try { _numberBox.Text = number; }
                 finally { _restoring = false; }
                 SaveSettings();
 
-                SetStatus("Смета сохранена: № " + number + " от " +
+                SetStatus("Заявка сохранена: № " + number + " от " +
                           saved.ToString("dd.MM.yyyy HH:mm", Fmt.Ru) +
                           "   •   позиций: " + estimate.Items.Count +
                           "   •   на сумму: " + Fmt.Money(estimate.Total) + " \u20BD");
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Не удалось сохранить смету:\n" + ex.Message,
-                    "Сохранение сметы", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, "Не удалось сохранить заявку:\n" + ex.Message,
+                    "Сохранение заявки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
-        // ------------------------------------------------- открытие сметы
+        // ------------------------------------------------- открытие заявки
 
-        /// <summary>Список сохранённых смет и открытие выбранной.</summary>
+        /// <summary>Список сохранённых заявок и открытие выбранной.</summary>
         private void OpenEstimate()
         {
             List<SavedEstimate> saved;
@@ -131,8 +131,8 @@ namespace KotovCalc
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Не удалось прочитать список смет:\n" + ex.Message,
-                    "Открытие сметы", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, "Не удалось прочитать список заявок:\n" + ex.Message,
+                    "Открытие заявки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -144,20 +144,20 @@ namespace KotovCalc
 
                     if (dialog.DeleteRequested)
                     {
-                        if (MessageBox.Show(this, "Удалить смету № " + dialog.Selected.Number + "?",
-                                "Удаление сметы", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                        if (MessageBox.Show(this, "Удалить заявку № " + dialog.Selected.Number + "?",
+                                "Удаление заявки", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                             continue;
 
                         try
                         {
                             ConnectionSettings.Archive.Delete(dialog.Selected);
                             saved.Remove(dialog.Selected);
-                            SetStatus("Смета № " + dialog.Selected.Number + " удалена.");
+                            SetStatus("Заявка № " + dialog.Selected.Number + " удалена.");
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show(this, "Не удалось удалить смету:\n" + ex.Message,
-                                "Удаление сметы", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            MessageBox.Show(this, "Не удалось удалить заявку:\n" + ex.Message,
+                                "Удаление заявки", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
 
                         continue;
@@ -169,7 +169,7 @@ namespace KotovCalc
             }
         }
 
-        /// <summary>Восстановление отметок и количеств из сохранённой сметы.</summary>
+        /// <summary>Восстановление отметок и количеств из сохранённой заявки.</summary>
         private void ApplyEstimate(SavedEstimate estimate)
         {
             if (estimate == null) return;
@@ -221,7 +221,7 @@ namespace KotovCalc
             RestyleRows();
             Recalculate();
 
-            string message = "Открыта смета № " + estimate.Number + " от " +
+            string message = "Открыта заявка № " + estimate.Number + " от " +
                              estimate.Saved.ToString("dd.MM.yyyy HH:mm", Fmt.Ru) +
                              "   •   позиций: " + estimate.Items.Count +
                              "   •   на сумму: " + Fmt.Money(estimate.Total) + " \u20BD";
@@ -234,13 +234,13 @@ namespace KotovCalc
             if (missing.Count > 0)
             {
                 MessageBox.Show(this,
-                    "В смете есть позиции, которых больше нет в каталоге номенклатуры: " +
+                    "В заявке есть позиции, которых больше нет в каталоге номенклатуры: " +
                     missing.Count + ".\n\n" + Shorten(string.Join(", ", missing.ToArray()), 400),
-                    "Открытие сметы", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    "Открытие заявки", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
-        /// <summary>Поиск позиции каталога для позиции сохранённой сметы.</summary>
+        /// <summary>Поиск позиции каталога для позиции сохранённой заявки.</summary>
         private EstimateRow FindRowFor(EstimateItem item)
         {
             EstimateRow byName = null;

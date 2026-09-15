@@ -146,7 +146,7 @@ namespace KotovCalc
 
         private void BuildInterface()
         {
-            Text = "Каталог номенклатуры — Расчет сметы";
+            Text = "Каталог номенклатуры — Заявки на расчет";
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(940, 560);
             ClientSize = new Size(1040, 660);
@@ -564,7 +564,7 @@ namespace KotovCalc
                                ". Вместе с ними пропадут цены и разделы." + Environment.NewLine +
                                Environment.NewLine +
                                "Сначала каталог сохраняется в резервную копию, поэтому " +
-                               "его можно будет вернуть. Но записи в сметах на удалённые " +
+                               "его можно будет вернуть. Но записи в заявках на удалённые " +
                                "позиции станут пустыми.";
                 dialog.Controls.Add(message);
 

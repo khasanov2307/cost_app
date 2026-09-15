@@ -1,11 +1,11 @@
 // ---------------------------------------------------------------------------
-//  Архив смет: сохранение, список и открытие.
+//  Архив заявок: сохранение, список и открытие.
 //
-//  Номер сметы присваивается автоматически и нумеруется в рамках года:
+//  Номер заявки присваивается автоматически и нумеруется в рамках года:
 //  1/2026, 2/2026 и так далее. Дата — дата сохранения.
 //
 //  Хранение:
-//    * файлы — по одному файлу на смету в папке «Сметы»;
+//    * файлы — по одному файлу на заявку в папке «Заявки»;
 //    * база данных — таблица smeta_estimates, позиции хранятся в jsonb.
 // ---------------------------------------------------------------------------
 
@@ -17,7 +17,7 @@ using System.Text;
 
 namespace KotovCalc
 {
-    /// <summary>Позиция сохранённой сметы.</summary>
+    /// <summary>Позиция сохранённой заявки.</summary>
     internal sealed class EstimateItem
     {
         public string Group = "";
@@ -28,7 +28,7 @@ namespace KotovCalc
         public decimal Price;
     }
 
-    /// <summary>Сохранённая смета.</summary>
+    /// <summary>Сохранённая заявока.</summary>
     internal sealed class SavedEstimate
     {
         public string Number = "";          // 12/2026
@@ -80,10 +80,10 @@ namespace KotovCalc
         }
     }
 
-    /// <summary>Следующий номер сметы в рамках года.</summary>
+    /// <summary>Следующий номер заявки в рамках года.</summary>
     internal static class EstimateNumbering
     {
-        /// <summary>Следующий номер по уже сохранённым сметам.</summary>
+        /// <summary>Следующий номер по уже сохранённым заявкам.</summary>
         public static string Next(IList<SavedEstimate> saved, int year)
         {
             int maximum = 0;
@@ -117,7 +117,7 @@ namespace KotovCalc
         }
     }
 
-    /// <summary>Архив смет: файлы или база данных.</summary>
+    /// <summary>Архив заявок: файлы или база данных.</summary>
     internal interface IEstimateArchive
     {
         List<SavedEstimate> Load();
@@ -126,16 +126,16 @@ namespace KotovCalc
         string Title { get; }
     }
 
-    /// <summary>Архив смет в файлах: по одному файлу на смету.</summary>
+    /// <summary>Архив заявок в файлах: по одному файлу на заявку.</summary>
     internal sealed class FileEstimateArchive : IEstimateArchive
     {
         /// <summary>Папка архива рядом с остальными данными программы.</summary>
         public static string Folder
         {
-            get { return System.IO.Path.Combine(PriceBook.StoreFolder, "Сметы"); }
+            get { return System.IO.Path.Combine(PriceBook.StoreFolder, "Заявки"); }
         }
 
-        public string Title { get { return "Сметы в файлах: " + Folder; } }
+        public string Title { get { return "Заявки в файлах: " + Folder; } }
 
         public List<SavedEstimate> Load()
         {
@@ -176,10 +176,10 @@ namespace KotovCalc
             }
         }
 
-        /// <summary>Имя файла сметы: год и порядковый номер.</summary>
+        /// <summary>Имя файла заявки: год и порядковый номер.</summary>
         private static string FileOf(SavedEstimate estimate)
         {
-            return System.IO.Path.Combine(Folder, "смета-" + estimate.Year.ToString("0000", CultureInfo.InvariantCulture) +
+            return System.IO.Path.Combine(Folder, "заявока-" + estimate.Year.ToString("0000", CultureInfo.InvariantCulture) +
                                                  "-" + estimate.Sequence.ToString("0000", CultureInfo.InvariantCulture) + ".json");
         }
 
@@ -193,7 +193,7 @@ namespace KotovCalc
         }
     }
 
-    /// <summary>Запись и чтение сметы в виде JSON.</summary>
+    /// <summary>Запись и чтение заявки в виде JSON.</summary>
     internal static class EstimateJson
     {
         public static void Write(string path, SavedEstimate estimate)

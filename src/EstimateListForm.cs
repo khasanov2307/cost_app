@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
-//  Сохранение и открытие смет.
+//  Сохранение и открытие заявок.
 //
-//  Номер сметы присваивается автоматически и нумеруется в рамках года,
-//  дата — дата сохранения. Из окна списка смету можно открыть для просмотра
+//  Номер заявки присваивается автоматически и нумеруется в рамках года,
+//  дата — дата сохранения. Из окна списка заявку можно открыть для просмотра
 //  или удалить.
 // ---------------------------------------------------------------------------
 
@@ -14,24 +14,24 @@ using System.Windows.Forms;
 
 namespace KotovCalc
 {
-    /// <summary>Окно со списком сохранённых смет.</summary>
+    /// <summary>Окно со списком сохранённых заявок.</summary>
     internal sealed class EstimateListForm : Form
     {
         private readonly List<SavedEstimate> _estimates;
         private readonly ListView _list;
         private readonly Label _info;
 
-        /// <summary>Выбранная смета.</summary>
+        /// <summary>Выбранная заявока.</summary>
         public SavedEstimate Selected { get; private set; }
 
-        /// <summary>Нужно ли удалить выбранную смету.</summary>
+        /// <summary>Нужно ли удалить выбранную заявку.</summary>
         public bool DeleteRequested { get; private set; }
 
         public EstimateListForm(List<SavedEstimate> estimates, string archiveTitle)
         {
             _estimates = estimates ?? new List<SavedEstimate>();
 
-            Text = "Сохранённые сметы";
+            Text = "Сохранённые заявки";
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(760, 460);
             ClientSize = new Size(880, 520);
@@ -43,7 +43,7 @@ namespace KotovCalc
             header.Size = new Size(ClientSize.Width - 32, 22);
             header.Location = new Point(16, 14);
             header.Font = new Font("Segoe UI", 12f, FontStyle.Bold, GraphicsUnit.Point);
-            header.Text = "Сохранённые сметы";
+            header.Text = "Сохранённые заявки";
             Controls.Add(header);
 
             Label where = new Label();
@@ -143,18 +143,18 @@ namespace KotovCalc
 
             if (count == 0)
             {
-                _info.Text = "Смет пока нет. Сохраните текущую смету — она появится в этом списке.";
+                _info.Text = "Заявок пока нет. Сохраните текущую заявку — она появится в этом списке.";
                 return;
             }
 
             SavedEstimate estimate = Current();
             if (estimate == null)
             {
-                _info.Text = "Смет в списке: " + count;
+                _info.Text = "Заявок в списке: " + count;
                 return;
             }
 
-            _info.Text = "Смет в списке: " + count + "   •   выбрана " + estimate.Caption;
+            _info.Text = "Заявок в списке: " + count + "   •   выбрана " + estimate.Caption;
         }
 
         private SavedEstimate Current()
@@ -168,7 +168,7 @@ namespace KotovCalc
             SavedEstimate estimate = Current();
             if (estimate == null)
             {
-                MessageBox.Show(this, "Выберите смету в списке.", "Сохранённые сметы",
+                MessageBox.Show(this, "Выберите заявку в списке.", "Сохранённые заявки",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
