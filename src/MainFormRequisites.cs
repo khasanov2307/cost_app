@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-//  Строка реквизитов заявки: статус, заказчик из справочника или вручную,
-//  телефон, автомобиль и госномер.
+//  Строка реквизитов заявки: номер, статус, скидка, заказчик, телефон,
+//  автомобиль и госномер.
 //
-//  Заказчика можно выбрать из справочника (список с подсказками) или просто
-//  ввести строкой — тогда карточка создаётся при сохранении заявки.
+//  Заказчика можно выбрать из справочника (список с подсказками) или ввести
+//  строкой — тогда карточка создаётся при сохранении заявки.
 // ---------------------------------------------------------------------------
 
 using System;
@@ -17,17 +17,19 @@ namespace KotovCalc
     {
         private ComboBox _statusBox;
         private ComboBox _customerPick;
-        private TextBox _phoneBox;
+        private PhoneBox _phoneBox;
         private TextBox _carBox;
         private TextBox _plateBox;
-        private Button _btnCopyLast;
+        private Button _btnStock;
+        private Button _btnCopyLast;              // повторить прошлую заявку
 
         private string _customerId = "";
+        private bool _showStock;
 
-        /// <summary>Строка реквизитов: статус, заказчик, телефон, автомобиль, номер.</summary>
+        /// <summary>Строка реквизитов: номер, статус, заказчик, автомобиль.</summary>
         private void BuildRequisiteRow(Panel top)
         {
-            // вторая строка: номер заявки, статус и скидка
+            // --- первая строка: номер, статус, скидка
             Label lblNumber = MakeLabel("Номер заявки:");
             lblNumber.Location = new Point(14, 94);
             top.Controls.Add(lblNumber);
@@ -65,54 +67,61 @@ namespace KotovCalc
             _discountBox.ValueChanged += DocumentFields_Changed;
             top.Controls.Add(_discountBox);
 
-            // третья строка: заказчик и его данные
+            // показ остатков склада в таблице
+            _btnStock = MakeButton("Показывать остатки", 180);
+            _btnStock.Location = new Point(580, 89);
+            _btnStock.Click += delegate { ToggleStockColumn(); };
+            top.Controls.Add(_btnStock);
+
+            // --- вторая строка: заказчик и телефон
             Label lblCustomer = MakeLabel("Заказчик:");
             lblCustomer.Location = new Point(14, 128);
             top.Controls.Add(lblCustomer);
 
             _customerPick = new ComboBox();
             _customerPick.Location = new Point(110, 124);
-            _customerPick.Width = 272;
-            _customerPick.DropDownStyle = ComboBoxStyle.DropDown;      // можно и выбрать, и ввести
+            _customerPick.Width = 280;
+            _customerPick.DropDownStyle = ComboBoxStyle.DropDown;      // можно выбрать или ввести
             _customerPick.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
             _customerPick.AutoCompleteSource = AutoCompleteSource.ListItems;
             _customerPick.TextChanged += CustomerTyped;
             _customerPick.SelectedIndexChanged += CustomerPicked;
+            _customerPick.DropDown += delegate { RefreshCustomerList(); };
             top.Controls.Add(_customerPick);
 
             Label lblPhone = MakeLabel("Телефон:");
-            lblPhone.Location = new Point(412, 128);
+            lblPhone.Location = new Point(404, 128);
             top.Controls.Add(lblPhone);
 
             _phoneBox = new PhoneBox();
-            _phoneBox.Location = new Point(478, 124);
+            _phoneBox.Location = new Point(470, 124);
             _phoneBox.Width = 148;
             _phoneBox.TextChanged += delegate { CustomerFieldsChanged(); DocumentFields_Changed(this, EventArgs.Empty); };
             top.Controls.Add(_phoneBox);
 
+            // --- третья строка: автомобиль и госномер
             Label lblCar = MakeLabel("Автомобиль:");
-            lblCar.Location = new Point(640, 128);
+            lblCar.Location = new Point(14, 162);
             top.Controls.Add(lblCar);
 
             _carBox = new TextBox();
-            _carBox.Location = new Point(704, 124);
-            _carBox.Width = 150;
+            _carBox.Location = new Point(110, 158);
+            _carBox.Width = 280;
             _carBox.TextChanged += delegate { CustomerFieldsChanged(); DocumentFields_Changed(this, EventArgs.Empty); };
             top.Controls.Add(_carBox);
 
             Label lblPlate = MakeLabel("Госномер:");
-            lblPlate.Location = new Point(856, 128);
+            lblPlate.Location = new Point(404, 162);
             top.Controls.Add(lblPlate);
 
             _plateBox = new TextBox();
-            _plateBox.Location = new Point(918, 124);
-            _plateBox.Width = 100;
+            _plateBox.Location = new Point(470, 158);
+            _plateBox.Width = 148;
             _plateBox.TextChanged += delegate { CustomerFieldsChanged(); DocumentFields_Changed(this, EventArgs.Empty); };
             top.Controls.Add(_plateBox);
-
         }
 
-        /// <summary>Заполнение списка заказчиков для подсказок.</summary>
+        /// <summary>Заполнение списка заказчиков для выбора и подсказок.</summary>
         private void RefreshCustomerList()
         {
             if (_customerPick == null) return;
@@ -132,6 +141,7 @@ namespace KotovCalc
                 _customerPick.EndUpdate();
             }
 
+            // текст возвращаем после наполнения списка
             _customerPick.Text = typed;
         }
 
@@ -176,7 +186,15 @@ namespace KotovCalc
             _customerId = "";
         }
 
-        // -------------------------------------------- данные заказчика в заявке
+        /// <summary>Данные заказчика в заявке: телефон, автомобиль, госномер.</summary>
+        private void CustomerFieldsChanged()
+        {
+            if (_restoring) return;
+
+            _fields.CustomerPhone = PhoneMask.Format(_phoneBox.Text);
+            _fields.Car = _carBox.Text.Trim();
+            _fields.Plate = _plateBox.Text.Trim();
+        }
 
         /// <summary>Показ заказчика и его данных в реквизитах.</summary>
         private void RestoreCustomerFields()
@@ -195,16 +213,62 @@ namespace KotovCalc
             {
                 _restoring = false;
             }
+
+            RefreshCustomerList();
         }
 
+        // ---------------------------------------------------- остатки склада
 
-        private void CustomerFieldsChanged()
+        /// <summary>Колонка остатков: показывать или скрыть.</summary>
+        private void ToggleStockColumn()
         {
-            if (_restoring) return;
+            _showStock = !_showStock;
 
-            _fields.CustomerPhone = PhoneMask.Format(_phoneBox.Text);
-            _fields.Car = _carBox.Text.Trim();
-            _fields.Plate = _plateBox.Text.Trim();
+            if (_colStock != null) _colStock.Visible = _showStock;
+
+            if (_btnStock != null)
+            {
+                _btnStock.FlatStyle = _showStock ? FlatStyle.Standard : FlatStyle.System;
+                _btnStock.Font = new Font("Segoe UI", 9.75f,
+                    _showStock ? FontStyle.Bold : FontStyle.Regular, GraphicsUnit.Point);
+                _btnStock.Text = _showStock ? "Остатки показаны" : "Показывать остатки";
+            }
+
+            RefreshStockValues();
+
+            SetStatus(_showStock
+                ? "Показаны остатки склада в таблице. Повторное нажатие скрывает колонку."
+                : "Колонка остатков скрыта.");
+        }
+
+        /// <summary>Обновление значений в колонке остатков.</summary>
+        private void RefreshStockValues()
+        {
+            if (_colStock == null || !_colStock.Visible) return;
+
+            Warehouse warehouse = Warehouse();
+
+            foreach (DataGridViewRow gridRow in _grid.Rows)
+            {
+                EstimateRow row = gridRow.Tag as EstimateRow;
+
+                if (row == null)
+                {
+                    gridRow.Cells[ColStock].Value = "";
+                    continue;
+                }
+
+                decimal stock = warehouse.Stock(row.Item.Article, row.Item.Name);
+                gridRow.Cells[ColStock].Value = Fmt.Qty(stock);
+
+                // чего нет на складе или мало — показываем цветом
+                if (stock <= 0m)
+                    gridRow.Cells[ColStock].Style.ForeColor = Color.FromArgb(170, 60, 40);
+                else if (row.Item.MinStock > 0m && stock < row.Item.MinStock)
+                    gridRow.Cells[ColStock].Style.ForeColor = Color.FromArgb(150, 95, 0);
+                else
+                    gridRow.Cells[ColStock].Style.ForeColor = Color.FromArgb(40, 70, 40);
+            }
         }
     }
 }

@@ -42,16 +42,18 @@ namespace KotovCalc
         private DataGridViewTextBoxColumn _colName;
         private DataGridViewTextBoxColumn _colArticle;   // артикул перед наименованием
         private DataGridViewTextBoxColumn _colEstimate;  // цена в заявке
+        private DataGridViewTextBoxColumn _colStock;     // остаток на складе
         private DataGridViewCheckBoxColumn _colCheck;
 
         private const int ColCheck = 0;
         private const int ColArticle = 1;       // артикул перед наименованием
         private const int ColName = 2;
         private const int ColUnit = 3;
-        private const int ColQty = 5;
-        private const int ColSum = 6;
-        private const int ColEstimate = 7;       // цена в заявке
-        private const int ColPrice = 4;          // цена из каталога (только чтение)
+        private const int ColQty = 6;
+        private const int ColSum = 7;
+        private const int ColEstimate = 8;       // цена в заявке
+        private const int ColStock = 4;          // остаток на складе (колонка скрыта)
+        private const int ColPrice = 5;          // цена из каталога (только чтение)
 
         private Font _baseFont;
         private Font _boldFont;
@@ -170,7 +172,7 @@ namespace KotovCalc
             // --- верхняя панель: поиск и работа со справочником ---
             Panel top = new Panel();
             top.Dock = DockStyle.Top;
-            top.Height = 172;
+            top.Height = 206;
 
             Label lblFind = new Label();
             lblFind.Text = "Поиск:";
@@ -348,6 +350,15 @@ namespace KotovCalc
             colUnit.ReadOnly = true;
             colUnit.SortMode = DataGridViewColumnSortMode.NotSortable;
 
+            _colStock = new DataGridViewTextBoxColumn();
+            _colStock.HeaderText = "Остаток";
+            _colStock.Width = 90;
+            _colStock.FillWeight = 10f;
+            _colStock.ReadOnly = true;
+            _colStock.SortMode = DataGridViewColumnSortMode.NotSortable;
+            _colStock.Visible = false;                 // по умолчанию колонка скрыта
+            _colStock.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+
             DataGridViewTextBoxColumn colPrice = new DataGridViewTextBoxColumn();
             colPrice.HeaderText = "Цена";
             colPrice.FillWeight = 14f;
@@ -379,7 +390,7 @@ namespace KotovCalc
             _colEstimate.DefaultCellStyle.BackColor = Color.FromArgb(255, 250, 224);
 
             grid.Columns.AddRange(new DataGridViewColumn[]
-                { _colCheck, _colArticle, _colName, colUnit, colPrice, colQty, colSum, _colEstimate });
+                { _colCheck, _colArticle, _colName, colUnit, _colStock, colPrice, colQty, colSum, _colEstimate });
 
             grid.CellValueChanged += Grid_CellValueChanged;
             grid.CurrentCellDirtyStateChanged += Grid_CurrentCellDirtyStateChanged;
@@ -570,7 +581,7 @@ namespace KotovCalc
 
         private void AddGroupRow(string group)
         {
-            int index = _grid.Rows.Add(new object[] { null, "", group, "", null, null, null, null });
+            int index = _grid.Rows.Add(new object[] { null, "", group, "", "", null, null, null, null });
             DataGridViewRow row = _grid.Rows[index];
             row.Tag = group;                       // маркер строки-заголовка группы
             row.Height = 30;
@@ -601,6 +612,7 @@ namespace KotovCalc
                 row.Item.Article,
                 row.Item.Name,
                 row.Item.Unit,
+                "",                      // остаток заполняется кнопкой «Показывать остатки»
                 row.Item.Price,
                 row.Quantity,
                 row.Sum,

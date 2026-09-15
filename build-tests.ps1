@@ -25,6 +25,7 @@ $outFlow = Join-Path $test 'PayFlowProbe.exe'
 $outFilter = Join-Path $test 'FilterProbe.exe'
 $outNew = Join-Path $test 'Harness10.exe'
 $outPhone = Join-Path $test 'PhoneProbe.exe'
+$outStock = Join-Path $test 'StockProbe.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
 $csc = @(
@@ -81,6 +82,11 @@ Write-Host '==> Compiling the service host' -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 
+
+Write-Host '==> Compiling the stock column checks' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:StockProbe "/out:$outStock" $sourceList `
+    (Join-Path $test 'StockProbe.cs')
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 Write-Host '==> Compiling the phone mask checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:PhoneProbe "/out:$outPhone" $sourceList `
@@ -193,6 +199,10 @@ if ($LASTEXITCODE -ne 0) { throw "Selection filter checks failed with exit code 
 Write-Host '==> Checking the phone mask' -ForegroundColor Cyan
 & $outPhone
 if ($LASTEXITCODE -ne 0) { throw "Phone mask checks failed with exit code $LASTEXITCODE" }
+
+Write-Host '==> Checking the stock column and customer choice' -ForegroundColor Cyan
+& $outStock
+if ($LASTEXITCODE -ne 0) { throw "Stock checks failed with exit code $LASTEXITCODE" }
 }
     $probe.Connect("127.0.0.1", 5432)
     $probe.Close()

@@ -61,7 +61,7 @@ namespace KotovCalc
         /// <summary>Наборы услуг и реквизиты документа в верхней панели, кнопки — в нижней.</summary>
         private void BuildExtraToolbar(Panel top, Panel bottom)
         {
-            top.Height = 172;   // три строки: поиск, наборы, реквизиты заявки
+            top.Height = 206;   // строки: поиск, наборы, реквизиты заявки (три строки)
 
             // --- первая строка: наборы услуг ---
             Label lblTemplate = MakeLabel("Набор услуг:");

@@ -81,14 +81,15 @@ internal static class Harness
 
         Console.WriteLine("[2б] Наименования колонок таблицы");
         Check("шапка таблицы видна", true, grid.ColumnHeadersVisible);
-        Check("колонок в таблице", 8, grid.Columns.Count);
+        Check("колонок в таблице", 9, grid.Columns.Count);
         Check("колонка 1 (артикул)", "Артикул", grid.Columns[1].HeaderText);
         Check("колонка 2", "Наименование", grid.Columns[2].HeaderText);
         Check("колонка 3", "Единица измерения", grid.Columns[3].HeaderText);
-        Check("колонка 4", "Цена", grid.Columns[4].HeaderText);
-        Check("колонка 5", "Количество", grid.Columns[5].HeaderText);
-        Check("колонка 6", "Всего", grid.Columns[6].HeaderText);
-        Check("колонка 7 (цена в заявке)", "Цена в заявке", grid.Columns[7].HeaderText);
+        Check("колонка 4 (остаток)", "Остаток", grid.Columns[4].HeaderText);
+        Check("колонка 5", "Цена", grid.Columns[5].HeaderText);
+        Check("колонка 6", "Количество", grid.Columns[6].HeaderText);
+        Check("колонка 7", "Всего", grid.Columns[7].HeaderText);
+        Check("колонка 8 (цена в заявке)", "Цена в заявке", grid.Columns[8].HeaderText);
 
         // номера колонок для проверок ниже: порядок задаётся в программе
         int columnQuantity = -1;
