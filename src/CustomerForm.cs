@@ -111,7 +111,7 @@ namespace KotovCalc
             Controls.Add(_name);
 
             AddLabel("Телефон:", left, 132);
-            _phone = new TextBox();
+            _phone = new PhoneBox();
             _phone.Location = new Point(left, 152);
             _phone.Width = 356;
             _phone.Anchor = AnchorStyles.Top | AnchorStyles.Right;

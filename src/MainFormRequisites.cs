@@ -72,7 +72,7 @@ namespace KotovCalc
 
             _customerPick = new ComboBox();
             _customerPick.Location = new Point(110, 124);
-            _customerPick.Width = 300;
+            _customerPick.Width = 272;
             _customerPick.DropDownStyle = ComboBoxStyle.DropDown;      // можно и выбрать, и ввести
             _customerPick.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
             _customerPick.AutoCompleteSource = AutoCompleteSource.ListItems;
@@ -81,31 +81,31 @@ namespace KotovCalc
             top.Controls.Add(_customerPick);
 
             Label lblPhone = MakeLabel("Телефон:");
-            lblPhone.Location = new Point(404, 128);
+            lblPhone.Location = new Point(412, 128);
             top.Controls.Add(lblPhone);
 
-            _phoneBox = new TextBox();
-            _phoneBox.Location = new Point(470, 124);
-            _phoneBox.Width = 150;
+            _phoneBox = new PhoneBox();
+            _phoneBox.Location = new Point(478, 124);
+            _phoneBox.Width = 148;
             _phoneBox.TextChanged += delegate { CustomerFieldsChanged(); DocumentFields_Changed(this, EventArgs.Empty); };
             top.Controls.Add(_phoneBox);
 
             Label lblCar = MakeLabel("Автомобиль:");
-            lblCar.Location = new Point(628, 128);
+            lblCar.Location = new Point(640, 128);
             top.Controls.Add(lblCar);
 
             _carBox = new TextBox();
-            _carBox.Location = new Point(706, 124);
+            _carBox.Location = new Point(704, 124);
             _carBox.Width = 150;
             _carBox.TextChanged += delegate { CustomerFieldsChanged(); DocumentFields_Changed(this, EventArgs.Empty); };
             top.Controls.Add(_carBox);
 
             Label lblPlate = MakeLabel("Госномер:");
-            lblPlate.Location = new Point(866, 128);
+            lblPlate.Location = new Point(856, 128);
             top.Controls.Add(lblPlate);
 
             _plateBox = new TextBox();
-            _plateBox.Location = new Point(932, 124);
+            _plateBox.Location = new Point(918, 124);
             _plateBox.Width = 100;
             _plateBox.TextChanged += delegate { CustomerFieldsChanged(); DocumentFields_Changed(this, EventArgs.Empty); };
             top.Controls.Add(_plateBox);
@@ -202,7 +202,7 @@ namespace KotovCalc
         {
             if (_restoring) return;
 
-            _fields.CustomerPhone = _phoneBox.Text.Trim();
+            _fields.CustomerPhone = PhoneMask.Format(_phoneBox.Text);
             _fields.Car = _carBox.Text.Trim();
             _fields.Plate = _plateBox.Text.Trim();
         }
