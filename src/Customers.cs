@@ -34,8 +34,6 @@ namespace KotovCalc
                 StringBuilder text = new StringBuilder();
                 text.Append(Name.Length == 0 ? "без имени" : Name);
                 if (Phone.Length > 0) text.Append("   ").Append(Phone);
-                if (Car.Length > 0) text.Append("   ").Append(Car);
-                if (Plate.Length > 0) text.Append("   ").Append(Plate);
                 return text.ToString();
             }
         }

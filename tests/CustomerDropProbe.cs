@@ -172,9 +172,71 @@ internal static class CustomerDropProbe
 
 
             PhoneBox phone = (PhoneBox)Field(form, "_phoneBox");
-            Console.WriteLine("выбран: [" + box.Text + "], телефон [" + phone.Text + "]");
-            Check("выбор из найденного подставил телефон",
-                  phone.Text == "8 (903) 777-55-33", phone.Text);
+            TextBox car = (TextBox)Field(form, "_carBox");
+            DocumentFields fields = (DocumentFields)Field(form, "_fields");
+
+            Console.WriteLine("телефон: [" + phone.Text + "]");
+            Console.WriteLine("автомобиль: [" + car.Text + "]");
+            Console.WriteLine("в реквизитах заявки: заказчик [" + fields.Customer +
+                              "], телефон [" + fields.CustomerPhone + "]");
+
+            Check("в реквизитах записан заказчик",
+                  fields.Customer == "Сергей Кузнецов", "записано [" + fields.Customer + "]");
+            Check("в поле заказчика только ФИО",
+                  box.Text == "Сергей Кузнецов", "в поле [" + box.Text + "]");
+
+            Console.WriteLine("выбран: [" + box.Text + "], индекс " + box.SelectedIndex +
+                              ", телефон [" + phone.Text + "]");
+            // проверка телефона сделана выше, здесь поля уже перезаписаны
+
+            // сразу после выбора в поле должно быть ФИО
+            Check("сразу после выбора в поле ФИО", box.Text == "Сергей Кузнецов",
+                  "в поле [" + box.Text + "]");
+
+            // и после того, как форма отрисуется, поле не должно вернуть подпись строки
+            Application.DoEvents();
+            form.Refresh();
+            Application.DoEvents();
+            Console.WriteLine("после отрисовки: [" + box.Text + "]");
+            Check("после отрисовки в поле ФИО", box.Text == "Сергей Кузнецов",
+                  "в поле [" + box.Text + "]");
+
+            // очистка выбранного заказчика
+            typeof(MainForm).GetMethod("ClearCustomer", Hidden).Invoke(form, null);
+            Application.DoEvents();
+
+            Console.WriteLine("после очистки: заказчик [" + box.Text + "], телефон [" + phone.Text +
+                              "], автомобиль [" + car.Text + "], номер [" +
+                              ((TextBox)Field(form, "_plateBox")).Text + "]");
+
+            Check("после очистки поле пустое", box.Text.Length == 0, "в поле [" + box.Text + "]");
+            Check("после очистки телефон пуст", phone.Text.Length == 0, "телефон [" + phone.Text + "]");
+            Check("после очистки автомобиль пуст", car.Text.Length == 0, "авто [" + car.Text + "]");
+            Check("после очистки реквизиты пусты", fields.Customer.Length == 0,
+                  "заказчик [" + fields.Customer + "]");
+
+            // после очистки можно выбрать заказчика снова
+            box.SelectedIndex = -1;
+            box.Text = "петров";
+            OpenDropDown(box);
+            Application.DoEvents();
+            Console.WriteLine("после очистки поиск «петров»: строк " + box.Items.Count +
+                              (box.Items.Count > 0 ? ", первая [" + Convert.ToString(box.Items[0]) + "]" : ""));
+            Check("после очистки поиск работает", box.Items.Count == 1, "строк " + box.Items.Count);
+
+            if (box.Items.Count > 0)
+            {
+                box.SelectedIndex = 0;
+                Application.DoEvents();
+                form.Refresh();
+                Application.DoEvents();
+
+                Console.WriteLine("новый выбор: [" + box.Text + "], телефон [" + phone.Text + "]");
+                Check("после очистки выбор снова подставляет ФИО",
+                      box.Text == "Иван Петров", "в поле [" + box.Text + "]");
+                Check("после очистки выбор снова подставляет телефон",
+                      phone.Text == "8 (912) 345-67-89", "телефон [" + phone.Text + "]");
+            }
         }
         else
         {

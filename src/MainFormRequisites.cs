@@ -23,6 +23,7 @@ namespace KotovCalc
         private TextBox _plateBox;
         private Button _btnStock;
         private Button _btnCopyLast;              // повторить прошлую заявку
+        private Button _btnClearCustomer;         // очистить выбранного заказчика
 
         private string _customerId = "";
         private bool _showStock;
@@ -82,7 +83,7 @@ namespace KotovCalc
 
             _customerPick = new ComboBox();
             _customerPick.Location = new Point(110, 124);
-            _customerPick.Width = 280;
+            _customerPick.Width = 210;
             _customerPick.DropDownStyle = ComboBoxStyle.DropDown;      // можно выбрать или ввести
             _customerPick.AutoCompleteMode = AutoCompleteMode.None;    // поиск ведёт наш код
             _customerPick.TextChanged += CustomerTyped;
@@ -93,12 +94,17 @@ namespace KotovCalc
             _customerPick.SelectedIndexChanged += CustomerPicked;
             top.Controls.Add(_customerPick);
 
+            _btnClearCustomer = MakeButton("Очистить", 120);
+            _btnClearCustomer.Location = new Point(328, 123);
+            _btnClearCustomer.Click += delegate { ClearCustomer(); };
+            top.Controls.Add(_btnClearCustomer);
+
             Label lblPhone = MakeLabel("Телефон:");
-            lblPhone.Location = new Point(404, 128);
+            lblPhone.Location = new Point(462, 128);
             top.Controls.Add(lblPhone);
 
             _phoneBox = new PhoneBox();
-            _phoneBox.Location = new Point(470, 124);
+            _phoneBox.Location = new Point(528, 124);
             _phoneBox.Width = 148;
             _phoneBox.TextChanged += delegate { CustomerFieldsChanged(); DocumentFields_Changed(this, EventArgs.Empty); };
             top.Controls.Add(_phoneBox);
@@ -115,11 +121,11 @@ namespace KotovCalc
             top.Controls.Add(_carBox);
 
             Label lblPlate = MakeLabel("Госномер:");
-            lblPlate.Location = new Point(404, 162);
+            lblPlate.Location = new Point(462, 162);
             top.Controls.Add(lblPlate);
 
             _plateBox = new TextBox();
-            _plateBox.Location = new Point(470, 158);
+            _plateBox.Location = new Point(528, 158);
             _plateBox.Width = 148;
             _plateBox.TextChanged += delegate { CustomerFieldsChanged(); DocumentFields_Changed(this, EventArgs.Empty); };
             top.Controls.Add(_plateBox);
@@ -224,6 +230,9 @@ namespace KotovCalc
                 _restoring = false;
             }
 
+            // в поле заказчика показываем только ФИО, а не всю строку карточки
+            ShowCustomerName(customer.Name);
+
             SaveSettings();
             SetStatus("Выбран заказчик: " + customer.Caption);
 
@@ -231,6 +240,66 @@ namespace KotovCalc
             RefreshCustomerList();
         }
 
+        /// <summary>
+        /// Показ ФИО в поле заказчика. Текст ставится ещё раз после обработки
+        /// события списком: иначе ComboBox возвращает в поле полную подпись строки.
+        /// </summary>
+        private void ShowCustomerName(string name)
+        {
+            if (_customerPick == null) return;
+
+            _restoring = true;
+            try
+            {
+                _customerPick.SelectedIndex = -1;      // своей подписи у поля нет
+                _customerPick.Text = name;
+            }
+            finally
+            {
+                _restoring = false;
+            }
+
+            // повторная установка текста после того, как список закончит обработку
+            BeginInvoke((MethodInvoker)delegate
+            {
+                if (_customerPick == null) return;
+                if (_customerPick.Text == name) return;
+
+                _restoring = true;
+                try { _customerPick.Text = name; }
+                finally { _restoring = false; }
+            });
+        }
+
+        /// <summary>Очистка выбранного заказчика: поле, телефон, автомобиль и номер.</summary>
+        private void ClearCustomer()
+        {
+            _restoring = true;
+            try
+            {
+                _customerId = "";
+                _fields.Customer = "";
+                _fields.CustomerPhone = "";
+                _fields.Car = "";
+                _fields.Plate = "";
+
+                _customerPick.SelectedIndex = -1;
+                _customerPick.Text = "";
+                _phoneBox.Text = "";
+                _carBox.Text = "";
+                _plateBox.Text = "";
+            }
+            finally
+            {
+                _restoring = false;
+            }
+
+            SaveSettings();
+            RefreshCustomerList();
+            _customerPick.Focus();
+
+            SetStatus("Заказчик очищен: можно выбрать другого или ввести вручную.");
+        }
         /// <summary>Оператор вводит заказчика строкой.</summary>
         private void CustomerTyped(object sender, EventArgs e)
         {
