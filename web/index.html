@@ -354,7 +354,7 @@ table.sign td { padding-top: 22px; color: var(--text); }
 <div class="wrap">
     <header class="top">
         <h1>Расчет сметы</h1>
-        <span class="hint">Веб-версия: работает в браузере, данные хранятся в самом браузере</span>
+        <span class="hint" id="storageHint">Веб-версия: данные хранятся в самом браузере</span>
     </header>
 
     <div class="tabs no-print">
@@ -377,6 +377,10 @@ table.sign td { padding-top: 22px; color: var(--text); }
             <span class="spacer"></span>
             <button type="button" id="themeButton">Тёмная тема</button>
             <button type="button" id="exportData">Выгрузить данные</button>
+            <label for="serverAddress">Сервис программы:</label>
+            <input type="text" id="serverAddress" placeholder="http://127.0.0.1:8791" style="min-width:200px">
+            <button type="button" id="serverConnect">Подключить</button>
+            <button type="button" id="serverDisconnect" style="display:none">Отключить</button>
             <label class="file-button">
                 Загрузить данные
                 <input type="file" id="importData" accept=".smeta,.json" style="display:none">

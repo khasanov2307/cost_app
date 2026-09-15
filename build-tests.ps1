@@ -18,6 +18,7 @@ $out3 = Join-Path $test 'DocxCheck.exe'
 $out4 = Join-Path $test 'Harness3.exe'
 $out5 = Join-Path $test 'Harness4.exe'
 $out6 = Join-Path $test 'Harness6.exe'
+$out7 = Join-Path $test 'Harness8.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
 $csc = @(
@@ -67,6 +68,11 @@ Write-Host '==> Compiling the Word checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:DocxCheck "/out:$out3" $sourceList `
     (Join-Path $test 'DocxCheck.cs')
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
+
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
+    (Join-Path $test 'Harness8.cs')
+& $csc $commonArgs $commonRefs /main:Harness8 "/out:$out7" $sourceList `
+Write-Host '==> Compiling the service host' -ForegroundColor Cyan
 Write-Host '==> Compiling the store checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:Harness6 "/out:$out6" $sourceList `
     (Join-Path $test 'Harness6.cs')
@@ -191,6 +197,14 @@ if ((Test-Path -LiteralPath $yandex) -and (Test-Path -LiteralPath $webChecks)) {
         Write-Host '==> Checking the company logo in the browser' -ForegroundColor Cyan
         & powershell -NoProfile -ExecutionPolicy Bypass -File $logoChecks
         if ($LASTEXITCODE -ne 0) { throw "Web logo checks failed with exit code $LASTEXITCODE" }
+    }
+
+    $serverChecks = Join-Path $test 'web_server_check.ps1'
+    if (Test-Path -LiteralPath $serverChecks) {
+        Write-Host ''
+        Write-Host '==> Checking the page against the program service' -ForegroundColor Cyan
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $serverChecks
+        if ($LASTEXITCODE -ne 0) { throw "Web server checks failed with exit code $LASTEXITCODE" }
     }
     }
 } else {

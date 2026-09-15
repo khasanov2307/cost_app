@@ -24,6 +24,12 @@ var state = {
 var STORAGE_KEY = 'raschet-smeta-v2';
 var pendingBackup = null;   // копия прайса, снятого кнопкой очистки
 var CLEAR_WORD = '\u041f\u041e\u041b\u041d\u041e\u0421\u0422\u042c\u042e';   // слово подтверждения очистки
+
+var SERVER_KEY = 'raschet-smeta-server';    // адрес сервиса настольной программы
+
+// Работа через сервис: если адрес задан и сервис отвечает, данные читаются
+// и записываются через него, а память браузера служит запасным вариантом.
+var server = { url: '', online: false, stamp: '', timer: null, pending: {}, quiet: false };
 var EXCHANGE_FORMAT = 'raschet-smeta';
 // --------------------------------------------------------------- утилиты
 
@@ -686,6 +692,14 @@ function exportDocx() {
 // ------------------------------------------------------- хранение данных
 
 function save() {
+    // в режиме сервиса изменения уходят в общее хранилище
+    if (server.online && !server.quiet) {
+        serverPush('prices');
+        serverPush('templates');
+        serverPush('settings');
+        serverPush('state');
+    }
+
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
             items: state.items,
@@ -1115,6 +1129,228 @@ function logoForDocx() {
 }
 
 // ------------------------------------------------------- логотип компании
+// ------------------------------------------------------- сервис программы
+
+/** Адрес сервиса без завершающей косой черты. */
+function serverBase() {
+    return server.url.replace(/\/+$/, '');
+}
+
+/** Запрос к сервису. Возвращает разобранный ответ или null. */
+function serverRequest(path, body, method) {
+    return new Promise(function (resolve) {
+        var request = new XMLHttpRequest();
+        request.open(method || (body ? 'POST' : 'GET'), serverBase() + path, true);
+        request.timeout = 8000;
+
+        if (body) request.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+
+        request.onload = function () {
+            var data = null;
+            try { data = JSON.parse(request.responseText); } catch (e) { data = null; }
+            resolve(data);
+        };
+        request.onerror = function () { resolve(null); };
+        request.ontimeout = function () { resolve(null); };
+
+        request.send(body ? JSON.stringify(body) : null);
+    });
+}
+
+/** Подключение к сервису: читаем данные, запоминаем адрес. */
+function connectServer(address) {
+    var value = (address || '').trim();
+    if (!value) {
+        setStatus('Укажите адрес сервиса, например http://127.0.0.1:8791');
+        return Promise.resolve(false);
+    }
+
+    if (value.indexOf('://') < 0) value = 'http://' + value;
+
+    var previous = server.url;
+    server.url = value;
+
+    return serverRequest('/api/data').then(function (data) {
+        if (!data || data.ok !== true) {
+            server.url = previous;
+            setStatus('Сервис не отвечает по адресу ' + value +
+                      '. Проверьте, что программа запущена и сервис включён.');
+            return false;
+        }
+
+        applyServerData(data);
+        server.online = true;
+        server.stamp = data.stamp || '';
+
+        try { localStorage.setItem(SERVER_KEY, server.url); } catch (e) { }
+
+        refreshServerControls();
+        renderEditor();
+        render();
+
+        setStatus('Работа через сервис: ' + (data.store || server.url) +
+                  '. Данные сохраняются в общем хранилище.');
+        return true;
+    });
+}
+
+/** Отключение от сервиса: дальше работаем в памяти браузера. */
+function disconnectServer() {
+    server.url = '';
+    server.online = false;
+    server.stamp = '';
+
+    try { localStorage.removeItem(SERVER_KEY); } catch (e) { }
+
+    refreshServerControls();
+    setStatus('Сервис отключён. Данные снова хранятся в памяти браузера.');
+    return true;
+}
+
+/** Разбор данных, полученных от сервиса. */
+function applyServerData(data) {
+    // данные пришли с сервиса: отправлять их обратно не нужно
+    server.quiet = true;
+    if (data.prices) {
+        state.items = [];
+        for (var i = 0; i < data.prices.length; i++) {
+            var item = data.prices[i];
+            if (!item || !item.name) continue;
+            state.items.push({
+                group: item.group || 'Прочее',
+                article: item.article || '',
+                name: item.name,
+                unit: item.unit || UNITS[0],
+                price: Number(item.price) || 0
+            });
+        }
+    }
+
+    if (data.templates) {
+        var templates = [];
+        for (var k = 0; k < data.templates.length; k++) {
+            var template = data.templates[k];
+            if (!template || !template.name) continue;
+
+            var items = [];
+            var source = template.items || [];
+            for (var n = 0; n < source.length; n++) {
+                items.push({
+                    group: source[n].group || '',
+                    article: source[n].article || '',
+                    name: source[n].name || '',
+                    quantity: Number(source[n].quantity) || 1
+                });
+            }
+            templates.push({ name: template.name, items: items });
+        }
+        state.templates = templates;
+    }
+
+    if (data.document) {
+        state.document.number = data.document.number || '';
+        state.document.customer = data.document.customer || '';
+        state.document.discount = clampDiscount(data.document.discount);
+    }
+
+    if (data.theme) state.theme = data.theme === 'dark' ? 'dark' : 'light';
+    if (data.logo !== undefined) {
+        state.logo = data.logo ? { data: data.logo, name: 'logo' } : null;
+    }
+
+    state.chosen = {};
+    if (data.state && data.state.chosen) state.chosen = normalizeChosen(data.state.chosen);
+
+    applyTheme();
+    showDocumentFields();
+    refreshLogoControls();
+    renderTemplateList();
+
+    try { save(); } finally { server.quiet = false; }
+}
+
+/** Отправка изменений на сервис — с небольшой задержкой, чтобы не частить. */
+function serverPush(part) {
+    if (!server.online) return;
+
+    server.pending[part] = true;
+
+    if (server.timer) clearTimeout(server.timer);
+
+    server.timer = setTimeout(function () {
+        var pending = server.pending;
+        server.pending = {};
+        server.timer = null;
+
+        if (pending.prices) {
+            serverRequest('/api/prices', { prices: state.items }).then(function (answer) {
+                reportServerAnswer(answer, 'прайс-лист');
+            });
+        }
+
+        if (pending.templates) {
+            serverRequest('/api/templates', { templates: state.templates }).then(function (answer) {
+                reportServerAnswer(answer, 'наборы услуг');
+            });
+        }
+
+        if (pending.settings) {
+            serverRequest('/api/settings', {
+                document: state.document,
+                theme: state.theme,
+                logo: state.logo ? state.logo.data : ''
+            }).then(function (answer) {
+                reportServerAnswer(answer, 'реквизиты');
+            });
+        }
+
+        if (pending.state) {
+            serverRequest('/api/state', {
+                chosen: state.chosen,
+                collapsing: state.collapsing
+            }).then(function (answer) {
+                reportServerAnswer(answer, 'смета');
+            });
+        }
+    }, 400);
+}
+
+/** Сообщение о результате отправки. */
+function reportServerAnswer(answer, what) {
+    if (!answer) {
+        server.online = false;
+        refreshServerControls();
+        setStatus('Сервис перестал отвечать: изменения сохранены только в браузере.');
+        return;
+    }
+
+    if (answer.ok !== true) {
+        setStatus('Сервис не принял данные (' + what + '): ' + (answer.error || 'без пояснения'));
+        return;
+    }
+
+    if (answer.stamp) server.stamp = answer.stamp;
+}
+
+/** Подписи кнопок и строки о режиме работы. */
+function refreshServerControls() {
+    var connect = document.getElementById('serverConnect');
+    var disconnect = document.getElementById('serverDisconnect');
+    var address = document.getElementById('serverAddress');
+    var hint = document.getElementById('storageHint');
+
+    if (connect) connect.style.display = server.online ? 'none' : '';
+    if (disconnect) disconnect.style.display = server.online ? '' : 'none';
+    if (address) {
+        address.value = server.url || '';
+        address.disabled = server.online;
+    }
+    if (hint) {
+        hint.textContent = server.online
+            ? 'Веб-версия: данные хранятся в общей базе через сервис программы'
+            : 'Веб-версия: данные хранятся в самом браузере';
+    }
+}
 function applyTheme() {
     var dark = state.theme === 'dark';
     document.body.className = dark ? 'dark' : 'light';
@@ -1472,6 +1708,13 @@ function bind() {
 
     document.getElementById('themeButton').addEventListener('click', toggleTheme);
     document.getElementById('exportData').addEventListener('click', exportData);
+    document.getElementById('serverConnect').addEventListener('click', function () {
+        connectServer(document.getElementById('serverAddress').value);
+    });
+
+    document.getElementById('serverDisconnect').addEventListener('click', function () {
+        disconnectServer();
+    });
     document.getElementById('importData').addEventListener('change', function (event) {
         if (event.target.files && event.target.files[0]) importData(event.target.files[0]);
         event.target.value = '';
@@ -1662,6 +1905,11 @@ window.WebEstimate = {
     toggleTheme: toggleTheme,
     clearPrices: clearPrices,
     toggleAllGroups: toggleAllGroups,
+    connectServer: connectServer,
+    disconnectServer: disconnectServer,
+    serverPush: serverPush,
+    applyServerData: applyServerData,
+    server: server,
     setLogoFile: setLogoFile,
     removeLogo: removeLogo,
     imageSize: imageSize,
