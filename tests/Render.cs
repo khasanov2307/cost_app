@@ -81,6 +81,19 @@ internal static class Render
         Application.DoEvents();
 
         DataGridView mainGrid = (DataGridView)typeof(MainForm).GetField("_grid", Hidden).GetValue(form);
+
+        // колонки ищем по названию: порядок колонок может меняться
+        int columnCheck = -1;
+        int columnQuantity = -1;
+
+        for (int i = 0; i < mainGrid.Columns.Count; i++)
+        {
+            string header = mainGrid.Columns[i].HeaderText;
+
+            if (mainGrid.Columns[i] is DataGridViewCheckBoxColumn) columnCheck = i;
+            if (header == "Количество") columnQuantity = i;
+        }
+
         if (args.Length > 2 && args[2] == "marked")
         {
             foreach (DataGridViewRow row in mainGrid.Rows)
@@ -91,10 +104,11 @@ internal static class Render
                     data.Item.Name.IndexOf("колодок", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     data.Item.Name.IndexOf("масла", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    row.Cells[0].Value = true;
+                    if (columnCheck >= 0) row.Cells[columnCheck].Value = true;
                 }
-                if (data.Item.Name.IndexOf("Компьютерная", StringComparison.OrdinalIgnoreCase) >= 0)
-                    row.Cells[4].Value = 2m;
+                if (data.Item.Name.IndexOf("Компьютерная", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    columnQuantity >= 0)
+                    row.Cells[columnQuantity].Value = 2m;
             }
         }
 

@@ -40,14 +40,18 @@ namespace KotovCalc
         private Button _btnGenerate;
 
         private DataGridViewTextBoxColumn _colName;
+        private DataGridViewTextBoxColumn _colArticle;   // артикул перед наименованием
+        private DataGridViewTextBoxColumn _colEstimate;  // цена в заявке
         private DataGridViewCheckBoxColumn _colCheck;
 
         private const int ColCheck = 0;
-        private const int ColName = 1;
-        private const int ColUnit = 2;
-        private const int ColQty = 4;
-        private const int ColSum = 5;
-        private const int ColPrice = 3;          // цена из прайса (только чтение)
+        private const int ColArticle = 1;       // артикул перед наименованием
+        private const int ColName = 2;
+        private const int ColUnit = 3;
+        private const int ColQty = 5;
+        private const int ColSum = 6;
+        private const int ColEstimate = 7;       // цена в заявке
+        private const int ColPrice = 4;          // цена из каталога (только чтение)
 
         private Font _baseFont;
         private Font _boldFont;
@@ -323,6 +327,14 @@ namespace KotovCalc
             _colCheck.SortMode = DataGridViewColumnSortMode.NotSortable;
             _colCheck.Resizable = DataGridViewTriState.False;
 
+            _colArticle = new DataGridViewTextBoxColumn();
+            _colArticle.HeaderText = "Артикул";
+            _colArticle.Width = 110;
+            _colArticle.FillWeight = 14f;
+            _colArticle.ReadOnly = true;
+            _colArticle.SortMode = DataGridViewColumnSortMode.NotSortable;
+            _colArticle.DefaultCellStyle.ForeColor = Color.FromArgb(70, 80, 95);
+
             _colName = new DataGridViewTextBoxColumn();
             _colName.HeaderText = "Наименование";
             _colName.FillWeight = 56f;
@@ -359,15 +371,15 @@ namespace KotovCalc
 
             // цена для этой заявки — колонка добавляется последней,
             // чтобы не менять порядок уже существующих
-            _colPrice = new DataGridViewTextBoxColumn();
-            _colPrice.HeaderText = "Цена в заявке";
-            _colPrice.FillWeight = 15f;
-            _colPrice.SortMode = DataGridViewColumnSortMode.NotSortable;
-            _colPrice.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-            _colPrice.DefaultCellStyle.BackColor = Color.FromArgb(255, 250, 224);
+            _colEstimate = new DataGridViewTextBoxColumn();
+            _colEstimate.HeaderText = "Цена в заявке";
+            _colEstimate.FillWeight = 15f;
+            _colEstimate.SortMode = DataGridViewColumnSortMode.NotSortable;
+            _colEstimate.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            _colEstimate.DefaultCellStyle.BackColor = Color.FromArgb(255, 250, 224);
 
             grid.Columns.AddRange(new DataGridViewColumn[]
-                { _colCheck, _colName, colUnit, colPrice, colQty, colSum, _colPrice });
+                { _colCheck, _colArticle, _colName, colUnit, colPrice, colQty, colSum, _colEstimate });
 
             grid.CellValueChanged += Grid_CellValueChanged;
             grid.CurrentCellDirtyStateChanged += Grid_CurrentCellDirtyStateChanged;
@@ -558,7 +570,7 @@ namespace KotovCalc
 
         private void AddGroupRow(string group)
         {
-            int index = _grid.Rows.Add(new object[] { null, group, "", null, null, null });
+            int index = _grid.Rows.Add(new object[] { null, "", group, "", null, null, null, null });
             DataGridViewRow row = _grid.Rows[index];
             row.Tag = group;                       // маркер строки-заголовка группы
             row.Height = 30;
@@ -586,6 +598,7 @@ namespace KotovCalc
             int index = _grid.Rows.Add(new object[]
             {
                 row.Selected,
+                row.Item.Article,
                 row.Item.Name,
                 row.Item.Unit,
                 row.Item.Price,
@@ -720,9 +733,12 @@ namespace KotovCalc
             string name = Convert.ToString(gridRow.Cells[ColName].Value);
             EstimateRow row = gridRow.Tag as EstimateRow;
             string group = row == null ? "" : row.Item.Group;
+            string article = row == null ? "" : row.Item.Article;
+
 
             return name.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) >= 0
-                || group.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) >= 0;
+                || group.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) >= 0
+                || article.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) >= 0;
         }
 
         private DataGridViewRow FirstVisibleRow()
@@ -1047,7 +1063,7 @@ namespace KotovCalc
                     e.FormattingApplied = true;
                 }
             }
-            else if (e.ColumnIndex == ColPrice || e.ColumnIndex == ColSum || e.ColumnIndex == 6)
+            else if (e.ColumnIndex == ColPrice || e.ColumnIndex == ColSum || e.ColumnIndex == ColEstimate)
             {
                 decimal amount;
                 if (Fmt.TryParseDecimal(Convert.ToString(e.Value), out amount))

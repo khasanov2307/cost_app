@@ -81,13 +81,24 @@ internal static class Harness
 
         Console.WriteLine("[2б] Наименования колонок таблицы");
         Check("шапка таблицы видна", true, grid.ColumnHeadersVisible);
-        Check("колонок в таблице", 7, grid.Columns.Count);
-        Check("колонка 1", "Наименование", grid.Columns[1].HeaderText);
-        Check("колонка 2", "Единица измерения", grid.Columns[2].HeaderText);
-        Check("колонка 3", "Цена", grid.Columns[3].HeaderText);
-        Check("колонка 4", "Количество", grid.Columns[4].HeaderText);
-        Check("колонка 5", "Всего", grid.Columns[5].HeaderText);
-        Check("колонка 6 (цена в смете)", "Цена в заявке", grid.Columns[6].HeaderText);
+        Check("колонок в таблице", 8, grid.Columns.Count);
+        Check("колонка 1 (артикул)", "Артикул", grid.Columns[1].HeaderText);
+        Check("колонка 2", "Наименование", grid.Columns[2].HeaderText);
+        Check("колонка 3", "Единица измерения", grid.Columns[3].HeaderText);
+        Check("колонка 4", "Цена", grid.Columns[4].HeaderText);
+        Check("колонка 5", "Количество", grid.Columns[5].HeaderText);
+        Check("колонка 6", "Всего", grid.Columns[6].HeaderText);
+        Check("колонка 7 (цена в заявке)", "Цена в заявке", grid.Columns[7].HeaderText);
+
+        // номера колонок для проверок ниже: порядок задаётся в программе
+        int columnQuantity = -1;
+        int columnSum = -1;
+
+        for (int i = 0; i < grid.Columns.Count; i++)
+        {
+            if (grid.Columns[i].HeaderText == "Количество") columnQuantity = i;
+            if (grid.Columns[i].HeaderText == "Всего") columnSum = i;
+        }
         Check("колонка галочек без надписи", "", grid.Columns[0].HeaderText);
 
         // отметить группу "Диагностика" через публичное поведение checkbox-ячейки
@@ -116,13 +127,13 @@ internal static class Harness
             if (data != null && data.Selected) { first = data; firstGridRow = row; break; }
         }
         Check("первая отмеченная позиция найдена", true, first != null);
-        firstGridRow.Cells[4].Value = 2m;   // колонка «Количество»
+        firstGridRow.Cells[columnQuantity].Value = 2m;
         Check("итог удвоенной позиции", expectedDiag + first.Item.Price, SumSelected(form));
         Check("сумма в строке", first.Item.Price * 2m,
-              Convert.ToDecimal(firstGridRow.Cells[5].Value, CultureInfo.InvariantCulture));
+              Convert.ToDecimal(firstGridRow.Cells[columnSum].Value, CultureInfo.InvariantCulture));
 
         Console.WriteLine("[5] Обработка неверного количества");
-        firstGridRow.Cells[4].Value = "абв";
+        firstGridRow.Cells[columnQuantity].Value = "абв";
         Check("итог не изменился", expectedDiag + first.Item.Price, SumSelected(form));
         Check("количество восстановлено", 2m, first.Quantity);
 
