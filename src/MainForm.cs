@@ -1187,16 +1187,6 @@ namespace KotovCalc
         }
 
 
-        private static string Positions(int count)
-        {
-            int last = count % 100;
-            int lastDigit = count % 10;
-
-            if (last >= 11 && last <= 14) return "позиций";
-            if (lastDigit == 1) return "позиция";
-            if (lastDigit >= 2 && lastDigit <= 4) return "позиции";
-            return "позиций";
-        }
 
         private static string Shorten(string text, int max)
         {
@@ -1319,41 +1309,6 @@ namespace KotovCalc
             catch { /* сохранение состояния не критично */ }
         }
 
-        private void RestoreSession()
-        {
-            try
-            {
-                if (!File.Exists(SessionPath)) return;
-
-                Dictionary<string, EstimateRow> index =
-                    new Dictionary<string, EstimateRow>(StringComparer.CurrentCultureIgnoreCase);
-                foreach (EstimateRow row in _rows)
-                    index[row.Item.Group + "\u0001" + row.Item.Name] = row;
-
-                int restored = 0;
-                foreach (string line in File.ReadAllLines(SessionPath, Encoding.UTF8))
-                {
-                    if (line.Trim().Length == 0 || line.TrimStart().StartsWith("#")) continue;
-
-                    string[] parts = line.Split('\t');
-                    if (parts.Length < 4) continue;
-
-                    EstimateRow row;
-                    if (!index.TryGetValue(parts[1].Trim() + "\u0001" + parts[2].Trim(), out row))
-                        continue;
-
-                    row.Selected = parts[0].Trim() == "1";
-                    decimal quantity;
-                    if (Fmt.TryParseDecimal(parts[3], out quantity) && quantity >= 0m)
-                        row.Quantity = quantity;
-                    restored++;
-                }
-
-                if (restored > 0)
-                    SetStatus("Восстановлены отметки прошлого сеанса: " + restored + " поз.");
-            }
-            catch { /* состояние не критично */ }
-        }
 
         /// <summary>Публичная точка сохранения состояния (вызывается при закрытии).</summary>
         public void SaveStateOnClose()

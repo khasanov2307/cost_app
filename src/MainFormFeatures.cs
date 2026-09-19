@@ -31,7 +31,6 @@ namespace KotovCalc
         private bool _restoring;
 
         private TextBox _numberBox;
-        private TextBox _customerBox;   // прежнее поле заказчика (заменено списком с подсказками)
         private NumericUpDown _discountBox;
         private ComboBox _templateBox;
         private TextBox _templateSearch;
@@ -45,7 +44,6 @@ namespace KotovCalc
         private WebService _web;                   // сервис для веб-версии
 
         // цена для этой заявки: колонка добавляется последней
-        private DataGridViewTextBoxColumn _colPrice;
         private const int ColPriceEdit = 6;
 
         private static Label MakeLabel(string text)
@@ -549,23 +547,6 @@ namespace KotovCalc
                 return small;
             }
         }
-
-        /// <summary>Рисование значка логотипа на нижней панели.</summary>
-        private void PaintLogoIcon(object sender, PaintEventArgs e)
-        {
-            if (_logoIcon == null) return;
-
-            Panel panel = sender as Panel;
-            if (panel == null) return;
-
-            int x = 14;                                          // слева, под подписями
-            int y = 72;
-
-            e.Graphics.DrawImage(_logoIcon, x, y);
-            using (Pen pen = new Pen(Color.FromArgb(190, 198, 210)))
-                e.Graphics.DrawRectangle(pen, x, y, _logoIcon.Width - 1, _logoIcon.Height - 1);
-        }
-
 
         // ---------------------------------------- подключение и веб-сервис
 
