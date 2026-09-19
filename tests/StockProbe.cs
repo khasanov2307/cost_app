@@ -65,35 +65,23 @@ internal static class StockProbe
 
         MainForm form = new MainForm();
         form.Show();
-        Application.DoEvents();
-
         DataGridView grid = (DataGridView)Field(form, "_grid");
-        ComboBox customer = (ComboBox)Field(form, "_customerPick");
         Button stock = (Button)Field(form, "_btnStock");
 
-        // --- заказчик: список наполняется при раскрытии
+        // --- заказчик: подстановка данных выбранной карточки
         Console.WriteLine("заказчиков в справочнике: " + customers.Customers.Count);
-        Call(form, "RefreshCustomerList");
+        typeof(MainForm).GetMethod("ApplyCustomer", Hidden).Invoke(form, new object[] { ivan });
         Application.DoEvents();
 
-        Console.WriteLine("в списке заказчика: " + customer.Items.Count + " строк");
-        Check("список заказчиков наполнен", customer.Items.Count == 1,
-              "строк " + customer.Items.Count);
-        Check("в списке карточка из справочника",
-              customer.Items.Count > 0 && Convert.ToString(customer.Items[0]).Contains("Иван Петров"),
-              customer.Items.Count > 0 ? Convert.ToString(customer.Items[0]) : "пусто");
-
-        // выбор из списка заполняет телефон, автомобиль и номер
-        customer.SelectedIndex = 0;
-        Application.DoEvents();
-
+        TextBox customerField = (TextBox)Field(form, "_customerPick");
         TextBox car = (TextBox)Field(form, "_carBox");
         TextBox plate = (TextBox)Field(form, "_plateBox");
         PhoneBox phone = (PhoneBox)Field(form, "_phoneBox");
 
-        Console.WriteLine("после выбора: телефон [" + phone.Text + "], авто [" + car.Text +
-                          "], номер [" + plate.Text + "]");
+        Console.WriteLine("после выбора: заказчик [" + customerField.Text + "], телефон [" + phone.Text +
+                          "], авто [" + car.Text + "], номер [" + plate.Text + "]");
 
+        Check("в поле заказчика ФИО", customerField.Text == "Иван Петров", customerField.Text);
         Check("телефон подставился", phone.Text == "8 (912) 345-67-89", phone.Text);
         Check("автомобиль подставился", car.Text == "Toyota Camry", car.Text);
         Check("госномер подставился", plate.Text == "А123ВС 77", plate.Text);

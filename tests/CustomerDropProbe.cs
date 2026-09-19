@@ -1,4 +1,4 @@
-// Проверка: раскрытие списка заказчиков и поиск по ФИО или телефону.
+// Проверка выбора заказчика: кнопка выбора, подстановка данных и очистка.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -21,34 +21,19 @@ internal static class CustomerDropProbe
         Console.WriteLine((value ? "  PASS  " : "  FAIL  ") + what + (value ? "" : "   " + details));
     }
 
-    /// <summary>Раскрытие списка — так же, как это делает щелчок по стрелке.</summary>
-    private static void OpenDropDown(ComboBox box)
+    private static void Call(object target, string name, params object[] args)
     {
-        MethodInfo method = typeof(ComboBox).GetMethod("OnDropDown", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (method == null) throw new MissingMethodException("OnDropDown");
-        method.Invoke(box, new object[] { EventArgs.Empty });
-    }
-
-    /// <summary>Настоящий щелчок по стрелке раскрытия списка.</summary>
-    private static void ClickArrow(ComboBox box)
-    {
-        MethodInfo rectangle = typeof(ComboBox).GetMethod("get_DropDownButtonRectangle",
-            BindingFlags.Instance | BindingFlags.NonPublic);
-
-        // внутренний прямоугольник стрелки есть не во всех версиях: тогда раскрываем напрямую
-        if (rectangle == null) { OpenDropDown(box); return; }
-
-        System.Drawing.Rectangle area = (System.Drawing.Rectangle)rectangle.Invoke(box, null);
-        System.Drawing.Point point = new System.Drawing.Point(area.Left + area.Width / 2, area.Top + area.Height / 2);
-
-        MethodInfo mouseDown = typeof(ComboBox).GetMethod("OnMouseDown",
-            BindingFlags.Instance | BindingFlags.NonPublic);
-        MethodInfo mouseUp = typeof(ComboBox).GetMethod("OnMouseUp",
-            BindingFlags.Instance | BindingFlags.NonPublic);
-
-        mouseDown.Invoke(box, new object[] { new MouseEventArgs(MouseButtons.Left, 1, point.X, point.Y, 0) });
-        mouseUp.Invoke(box, new object[] { new MouseEventArgs(MouseButtons.Left, 1, point.X, point.Y, 0) });
-        Application.DoEvents();
+        for (Type type = target.GetType(); type != null; type = type.BaseType)
+        {
+            foreach (MethodInfo method in type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
+            {
+                if (method.Name != name) continue;
+                if (method.GetParameters().Length != args.Length) continue;
+                method.Invoke(target, args);
+                return;
+            }
+        }
+        throw new MissingMethodException(name);
     }
 
     [STAThread]
@@ -58,7 +43,7 @@ internal static class CustomerDropProbe
         Application.SetCompatibleTextRenderingDefault(false);
         Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("ru-RU");
 
-        string store = Path.Combine(Path.GetTempPath(), "kotov-drop");
+        string store = Path.Combine(Path.GetTempPath(), "kotov-customer");
         if (Directory.Exists(store)) Directory.Delete(store, true);
         Directory.CreateDirectory(store);
         PriceBook.StorePath = Path.Combine(store, "prices.xml");
@@ -73,245 +58,103 @@ internal static class CustomerDropProbe
         Customer maria = customers.Ensure("Мария Сидорова", "8 916 000-11-22");
         maria.Car = "Kia Rio";
 
-        Customer sergey = customers.Ensure("Сергей Кузнецов", "+7 (903) 777-55-33");
+        customers.Ensure("Сергей Кузнецов", "+7 (903) 777-55-33");
         ConnectionSettings.Customers.Save(customers);
 
         MainForm form = new MainForm();
         form.Show();
         Application.DoEvents();
 
-        ComboBox box = (ComboBox)Field(form, "_customerPick");
-        Console.WriteLine("заказчиков в справочнике: " + customers.Customers.Count);
+        TextBox box = (TextBox)Field(form, "_customerPick");
+        PhoneBox phone = (PhoneBox)Field(form, "_phoneBox");
+        TextBox car = (TextBox)Field(form, "_carBox");
+        TextBox plate = (TextBox)Field(form, "_plateBox");
+        DocumentFields fields = (DocumentFields)Field(form, "_fields");
 
-        // 1) раскрытие пустого поля — весь справочник
-        try
-        {
-            OpenDropDown(box);
-            Application.DoEvents();
-            Console.WriteLine("после раскрытия пустого поля строк: " + box.Items.Count);
-            Check("пустое поле показывает всех", box.Items.Count == 3, "строк " + box.Items.Count);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("  ОШИБКА при раскрытии пустого поля: " + ex.GetType().Name + ": " + ex.Message);
-            problems++;
-        }
+        Check("поле заказчика — поле ввода, а не список",
+              box != null && !(box is ComboBox), "тип " + (box == null ? "нет" : box.GetType().Name));
 
-        // 2) поиск по части фамилии
-        try
-        {
-            box.Text = "мария";
-            OpenDropDown(box);
-            Application.DoEvents();
-            Console.WriteLine("поиск «мария»: строк " + box.Items.Count +
-                              (box.Items.Count > 0 ? ", первая [" + Convert.ToString(box.Items[0]) + "]" : ""));
-            Check("поиск по имени нашёл одну карточку", box.Items.Count == 1, "строк " + box.Items.Count);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("  ОШИБКА при поиске по имени: " + ex.GetType().Name + ": " + ex.Message);
-            problems++;
-        }
-
-        // 3) поиск по цифрам телефона
-        try
-        {
-            box.Text = "916";
-            OpenDropDown(box);
-            Application.DoEvents();
-            Console.WriteLine("поиск «916»: строк " + box.Items.Count +
-                              (box.Items.Count > 0 ? ", первая [" + Convert.ToString(box.Items[0]) + "]" : ""));
-            Check("поиск по цифрам телефона нашёл карточку", box.Items.Count == 1, "строк " + box.Items.Count);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("  ОШИБКА при поиске по телефону: " + ex.GetType().Name + ": " + ex.Message);
-            problems++;
-        }
-
-        // 4) поиск по полному номеру с восьмёркой
-        try
-        {
-            box.Text = "89037775533";
-            OpenDropDown(box);
-            Application.DoEvents();
-            Console.WriteLine("поиск «89037775533»: строк " + box.Items.Count);
-            Check("поиск по полному номеру нашёл карточку", box.Items.Count == 1, "строк " + box.Items.Count);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("  ОШИБКА при поиске по полному номеру: " + ex.GetType().Name + ": " + ex.Message);
-            problems++;
-        }
-
-        // 5) ничего не найдено
-        try
-        {
-            box.Text = "нет такого";
-            OpenDropDown(box);
-            Application.DoEvents();
-            Console.WriteLine("поиск «нет такого»: строк " + box.Items.Count);
-            Check("неизвестный заказчик не найден", box.Items.Count == 0, "строк " + box.Items.Count);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("  ОШИБКА при пустом результате: " + ex.GetType().Name + ": " + ex.Message);
-            problems++;
-        }
-
-        // 6) выбор из найденного списка
-        box.Text = "кузнец";
-        OpenDropDown(box);
+        // подстановка выбранного заказчика
+        Call(form, "ApplyCustomer", ivan);
         Application.DoEvents();
 
+        Console.WriteLine("после выбора: поле [" + box.Text + "], телефон [" + phone.Text +
+                          "], авто [" + car.Text + "], номер [" + plate.Text + "]");
 
-        if (box.Items.Count > 0)
+        Check("в поле заказчика ФИО", box.Text == "Иван Петров", "в поле [" + box.Text + "]");
+        Check("телефон подставлен", phone.Text == "8 (912) 345-67-89", phone.Text);
+        Check("автомобиль подставлен", car.Text == "Toyota Camry", car.Text);
+        Check("госномер подставлен", plate.Text == "А123ВС 77", plate.Text);
+
+        // курсор стоит в конце ФИО, а не в начале
+        Console.WriteLine("курсор после выбора: " + box.SelectionStart + " из " + box.Text.Length);
+        Check("курсор в конце ФИО", box.SelectionStart == box.Text.Length,
+              "курсор " + box.SelectionStart);
+
+        // ввод с клавиатуры: курсор не прыгает и текст не теряется
+        box.Text = "";
+        box.SelectionStart = 0;
+        Application.DoEvents();
+
+        string typed = "сидор";
+        for (int i = 1; i <= typed.Length; i++)
         {
-            box.SelectedIndex = 0;
+            box.Text = typed.Substring(0, i);
+            box.SelectionStart = i;
             Application.DoEvents();
 
-
-            PhoneBox phone = (PhoneBox)Field(form, "_phoneBox");
-            TextBox car = (TextBox)Field(form, "_carBox");
-            DocumentFields fields = (DocumentFields)Field(form, "_fields");
-
-            Console.WriteLine("телефон: [" + phone.Text + "]");
-            Console.WriteLine("автомобиль: [" + car.Text + "]");
-            Console.WriteLine("в реквизитах заявки: заказчик [" + fields.Customer +
-                              "], телефон [" + fields.CustomerPhone + "]");
-
-            Check("в реквизитах записан заказчик",
-                  fields.Customer == "Сергей Кузнецов", "записано [" + fields.Customer + "]");
-            Check("в поле заказчика только ФИО",
-                  box.Text == "Сергей Кузнецов", "в поле [" + box.Text + "]");
-
-            Console.WriteLine("выбран: [" + box.Text + "], индекс " + box.SelectedIndex +
-                              ", телефон [" + phone.Text + "]");
-            // проверка телефона сделана выше, здесь поля уже перезаписаны
-
-            // сразу после выбора в поле должно быть ФИО
-            Check("сразу после выбора в поле ФИО", box.Text == "Сергей Кузнецов",
-                  "в поле [" + box.Text + "]");
-
-            // и после того, как форма отрисуется, поле не должно вернуть подпись строки
-            Application.DoEvents();
-            form.Refresh();
-            Application.DoEvents();
-            Console.WriteLine("после отрисовки: [" + box.Text + "]");
-            Check("после отрисовки в поле ФИО", box.Text == "Сергей Кузнецов",
-                  "в поле [" + box.Text + "]");
-
-            // очистка выбранного заказчика
-            typeof(MainForm).GetMethod("ClearCustomer", Hidden).Invoke(form, null);
-            Application.DoEvents();
-
-            Console.WriteLine("после очистки: заказчик [" + box.Text + "], телефон [" + phone.Text +
-                              "], автомобиль [" + car.Text + "], номер [" +
-                              ((TextBox)Field(form, "_plateBox")).Text + "]");
-
-            Check("после очистки поле пустое", box.Text.Length == 0, "в поле [" + box.Text + "]");
-            Check("после очистки телефон пуст", phone.Text.Length == 0, "телефон [" + phone.Text + "]");
-            Check("после очистки автомобиль пуст", car.Text.Length == 0, "авто [" + car.Text + "]");
-            Check("после очистки реквизиты пусты", fields.Customer.Length == 0,
-                  "заказчик [" + fields.Customer + "]");
-
-            // после очистки можно выбрать заказчика снова
-            box.SelectedIndex = -1;
-            box.Text = "петров";
-            OpenDropDown(box);
-            Application.DoEvents();
-            Console.WriteLine("после очистки поиск «петров»: строк " + box.Items.Count +
-                              (box.Items.Count > 0 ? ", первая [" + Convert.ToString(box.Items[0]) + "]" : ""));
-            Check("после очистки поиск работает", box.Items.Count == 1, "строк " + box.Items.Count);
-
-            if (box.Items.Count > 0)
-            {
-                box.SelectedIndex = 0;
-                Application.DoEvents();
-                form.Refresh();
-                Application.DoEvents();
-
-                Console.WriteLine("новый выбор: [" + box.Text + "], телефон [" + phone.Text + "]");
-                Check("после очистки выбор снова подставляет ФИО",
-                      box.Text == "Иван Петров", "в поле [" + box.Text + "]");
-                Check("после очистки выбор снова подставляет телефон",
-                      phone.Text == "8 (912) 345-67-89", "телефон [" + phone.Text + "]");
-            }
-        }
-        else
-        {
-            Console.WriteLine("  ОШИБКА: поиск «кузнец» ничего не нашёл");
-            problems++;
+            Console.WriteLine("  введено [" + box.Text + "] курсор " + box.SelectionStart +
+                              " из " + box.Text.Length);
         }
 
-        // 7) курсор при вводе не должен прыгать в начало строки
-        try
-        {
-            box.Text = "";
-            Application.DoEvents();
+        Check("курсор остался в конце строки", box.SelectionStart == box.Text.Length,
+              "курсор " + box.SelectionStart + " при длине " + box.Text.Length);
+        Check("введённый текст не потерялся", box.Text == "сидор", "в поле [" + box.Text + "]");
+        Check("введённый строкой заказчик попал в реквизиты",
+              fields.Customer == "сидор", "в реквизитах [" + fields.Customer + "]");
 
-            // вводим по одной букве, как это делает человек
-            string typed = "сидор";
-            for (int i = 1; i <= typed.Length; i++)
-            {
-                box.Text = typed.Substring(0, i);
-                box.SelectionStart = i;
-                Application.DoEvents();
+        // поиск по введённому тексту: по ФИО и по цифрам телефона
+        List<Customer> byName = customers.Search("сидор");
+        List<Customer> byPhone = customers.Search("916");
+        List<Customer> byFull = customers.Search("89037775533");
 
-                Console.WriteLine("  введено [" + box.Text + "] курсор " + box.SelectionStart +
-                                  " из " + box.Text.Length);
-            }
+        Check("поиск по части ФИО", byName.Count == 1 && byName[0].Name == "Мария Сидорова",
+              "найдено " + byName.Count);
+        Check("поиск по части телефона", byPhone.Count == 1 && byPhone[0].Name == "Мария Сидорова",
+              "найдено " + byPhone.Count);
+        Check("поиск по полному номеру с восьмёркой", byFull.Count == 1 &&
+              byFull[0].Name == "Сергей Кузнецов", "найдено " + byFull.Count);
+        Check("неизвестный заказчик не найден", customers.Search("нет такого").Count == 0, "нашёлся");
 
-            Check("курсор остался в конце строки",
-                  box.SelectionStart == box.Text.Length, "курсор " + box.SelectionStart +
-                  " при длине " + box.Text.Length);
-            Check("введённый текст не потерялся", box.Text == "сидор", "в поле [" + box.Text + "]");
-            Check("поиск во время ввода нашёл карточку", box.Items.Count == 1, "строк " + box.Items.Count);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("  ОШИБКА при вводе: " + ex.GetType().Name + ": " + ex.Message);
-            problems++;
-        }
+        // очистка
+        Call(form, "ApplyCustomer", maria);
+        Application.DoEvents();
+        Call(form, "ClearCustomer");
+        Application.DoEvents();
 
-        // 8) настоящий щелчок по стрелке: именно здесь программа падала
-        try
-        {
-            box.Text = "";
-            ClickArrow(box);
-            Console.WriteLine("щелчок по стрелке: раскрыт " + box.DroppedDown + ", строк " + box.Items.Count);
-            Check("щелчок по стрелке не роняет программу", true, "");
+        Console.WriteLine("после очистки: поле [" + box.Text + "], телефон [" + phone.Text +
+                          "], авто [" + car.Text + "], номер [" + plate.Text + "]");
 
-            box.DroppedDown = false;
-            Application.DoEvents();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("  ОШИБКА при щелчке по стрелке: " + ex.GetType().Name + ": " + ex.Message);
-            problems++;
-        }
+        Check("после очистки поле пустое", box.Text.Length == 0, "в поле [" + box.Text + "]");
+        Check("после очистки телефон пуст", phone.Text.Length == 0, "телефон [" + phone.Text + "]");
+        Check("после очистки автомобиль пуст", car.Text.Length == 0, "авто [" + car.Text + "]");
+        Check("после очистки госномер пуст", plate.Text.Length == 0, "номер [" + plate.Text + "]");
+        Check("после очистки реквизиты пусты", fields.Customer.Length == 0,
+              "заказчик [" + fields.Customer + "]");
 
-        // 8) повторное раскрытие после выбора не должно падать
-        try
-        {
-            OpenDropDown(box);
-            Application.DoEvents();
-            Console.WriteLine("повторное раскрытие: строк " + box.Items.Count);
-            Check("повторное раскрытие без ошибок", true, "");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("  ОШИБКА при повторном раскрытии: " + ex.GetType().Name + ": " + ex.Message);
-            problems++;
-        }
+        // после очистки можно выбрать другого
+        Call(form, "ApplyCustomer", ivan);
+        Application.DoEvents();
+
+        Check("после очистки выбор снова работает", box.Text == "Иван Петров",
+              "в поле [" + box.Text + "]");
 
         form.Close();
         Directory.Delete(store, true);
 
         Console.WriteLine();
-        if (problems == 0) { Console.WriteLine("ПОИСК ЗАКАЗЧИКА РАБОТАЕТ"); Environment.Exit(0); }
+        if (problems == 0) { Console.WriteLine("ВЫБОР ЗАКАЗЧИКА РАБОТАЕТ"); Environment.Exit(0); }
         Console.WriteLine("ЗАМЕЧАНИЙ: " + problems);
         Environment.Exit(1);
     }
 }
-
