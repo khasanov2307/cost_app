@@ -28,6 +28,7 @@ namespace KotovCalc
         private string _customerId = "";
         private bool _showStock;
         private bool _customerListFilling;        // защита от повторного входа
+        private int _customerCaret = -1;          // место курсора в поле заказчика
 
         /// <summary>Строка реквизитов: номер, статус, заказчик, автомобиль.</summary>
         private void BuildRequisiteRow(Panel top)
@@ -87,10 +88,11 @@ namespace KotovCalc
             _customerPick.DropDownStyle = ComboBoxStyle.DropDown;      // можно выбрать или ввести
             _customerPick.AutoCompleteMode = AutoCompleteMode.None;    // поиск ведёт наш код
             _customerPick.TextChanged += CustomerTyped;
+            _customerPick.KeyUp += delegate { if (_customerPick != null) _customerCaret = _customerPick.SelectionStart; };
 
             // список наполняем заранее: в момент раскрытия менять его нельзя
             _customerPick.Enter += delegate { RefreshCustomerList(); };
-            _customerPick.DropDown += delegate { FillCustomerList(); };
+            _customerPick.DropDown += delegate { FillCustomerListOnDropDown(); };
             _customerPick.SelectedIndexChanged += CustomerPicked;
             top.Controls.Add(_customerPick);
 
@@ -141,19 +143,46 @@ namespace KotovCalc
             // пустое поле — весь справочник, иначе поиск по ФИО или телефону
             FillCustomerList(typed.Trim().Length == 0 ? CustomerSearch("") : CustomerSearch(typed));
 
-            // текст возвращаем после наполнения, чтобы поиск не сбивался
-            if (_customerPick.Text != typed) _customerPick.Text = typed;
+            // текст и место курсора возвращаем: иначе курсор прыгает в начало
+            RestoreCustomerText(typed);
         }
 
         /// <summary>То же, но по тексту, который виден в поле в момент раскрытия.</summary>
-        private void FillCustomerList()
+        private void FillCustomerListOnDropDown()
         {
             if (_customerPick == null || _customerListFilling) return;
 
             string typed = _customerPick.Text;
             FillCustomerList(typed.Trim().Length == 0 ? CustomerSearch("") : CustomerSearch(typed));
 
-            if (_customerPick.Text != typed) _customerPick.Text = typed;
+            RestoreCustomerText(typed);
+        }
+
+        /// <summary>
+        /// Возврат текста и места курсора после перезаполнения списка.
+        /// Очистка Items сама ставит курсор в начало строки, поэтому позицию
+        /// запоминаем до перезаполнения и ставим обратно.
+        /// </summary>
+        private void RestoreCustomerText(string typed)
+        {
+            if (_customerPick == null) return;
+
+            _restoring = true;
+            try
+            {
+                if (_customerPick.Text != typed) _customerPick.Text = typed;
+
+                int caret = _customerCaret;
+                if (caret < 0) caret = typed.Length;
+                if (caret > _customerPick.Text.Length) caret = _customerPick.Text.Length;
+
+                _customerPick.SelectionStart = caret;
+                _customerPick.SelectionLength = 0;
+            }
+            finally
+            {
+                _restoring = false;
+            }
         }
 
         private void FillCustomerList(List<Customer> customers)
@@ -179,6 +208,7 @@ namespace KotovCalc
                 _customerListFilling = false;
             }
         }
+
 
         /// <summary>Поиск по ФИО, телефону, автомобилю или номеру.</summary>
         private List<Customer> CustomerSearch(string query)

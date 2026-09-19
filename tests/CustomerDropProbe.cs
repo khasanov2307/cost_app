@@ -244,7 +244,37 @@ internal static class CustomerDropProbe
             problems++;
         }
 
-        // 7) настоящий щелчок по стрелке: именно здесь программа падала
+        // 7) курсор при вводе не должен прыгать в начало строки
+        try
+        {
+            box.Text = "";
+            Application.DoEvents();
+
+            // вводим по одной букве, как это делает человек
+            string typed = "сидор";
+            for (int i = 1; i <= typed.Length; i++)
+            {
+                box.Text = typed.Substring(0, i);
+                box.SelectionStart = i;
+                Application.DoEvents();
+
+                Console.WriteLine("  введено [" + box.Text + "] курсор " + box.SelectionStart +
+                                  " из " + box.Text.Length);
+            }
+
+            Check("курсор остался в конце строки",
+                  box.SelectionStart == box.Text.Length, "курсор " + box.SelectionStart +
+                  " при длине " + box.Text.Length);
+            Check("введённый текст не потерялся", box.Text == "сидор", "в поле [" + box.Text + "]");
+            Check("поиск во время ввода нашёл карточку", box.Items.Count == 1, "строк " + box.Items.Count);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("  ОШИБКА при вводе: " + ex.GetType().Name + ": " + ex.Message);
+            problems++;
+        }
+
+        // 8) настоящий щелчок по стрелке: именно здесь программа падала
         try
         {
             box.Text = "";
