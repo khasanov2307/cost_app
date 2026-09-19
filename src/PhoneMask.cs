@@ -63,7 +63,33 @@ namespace KotovCalc
             return text2.ToString();
         }
 
+        /// <summary>Место курсора после указанного числа цифр и знаков маски.</summary>
+        public static int PositionAfterDigits(string text, int digits)
+        {
+            if (digits <= 0) return 0;
+
+            int seen = 0;
+            int position = 0;
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (!char.IsDigit(text[i])) continue;
+
+                seen++;
+                position = i + 1;
+                if (seen == digits) break;
+            }
+
+            if (seen < digits) return text.Length;
+
+            // пропускаем знаки маски сразу за цифрой: «) », «-», пробел
+            while (position < text.Length && !char.IsDigit(text[position])) position++;
+
+            return position;
+        }
+
         /// <summary>Заполнен ли номер полностью (11 цифр).</summary>
+
         public static bool IsComplete(string text)
         {
             string digits = Digits(text);
@@ -80,42 +106,35 @@ namespace KotovCalc
         {
             MaxLength = 18;                     // «8 (999) 999-99-99» — 18 знаков
         }
-
+        /// <summary>
+        /// Форматирование по ходу ввода. Место курсора остаётся после той же
+        /// цифры: считаем цифры слева от курсора до форматирования и ставим курсор
+        /// после стольких же цифр в готовой строке. Так одинаково верно работает
+        /// и быстрый ввод, и быстрое стирание.
+        /// </summary>
         protected override void OnTextChanged(EventArgs e)
         {
             // защита от повторного входа: форматирование меняет текст и снова вызывает событие
             if (_formatting) { base.OnTextChanged(e); return; }
+
             base.OnTextChanged(e);
 
-            if (_formatting) return;
+            // сколько цифр стоит слева от курсора — считаем до любых изменений
+            int caret = Math.Min(SelectionStart, Text.Length);
+            int digitsBefore = PhoneMask.Digits(Text.Substring(0, caret)).Length;
 
             string formatted = PhoneMask.Format(Text);
-            if (formatted == Text) return;
 
+            // запрет входа ставим до правок: установка курсора в Windows Forms
+            // меняет текст и снова вызывает это событие, из-за чего курсор
+            // перескакивал, а цифры попадали не на своё место
             _formatting = true;
             try
             {
-                int caret = SelectionStart;
-                string before = PhoneMask.Digits(Text.Substring(0, Math.Min(caret, Text.Length)));
-                int wasDigits = PhoneMask.Digits(Text).Length;
+                if (formatted != Text) Text = formatted;
 
-                Text = formatted;
-
-                // курсор ставим после того же числа цифр
-                int want = before.Length;
-                int position = 0;
-                int seen = 0;
-
-                while (position < Text.Length && seen < want)
-                {
-                    if (char.IsDigit(Text[position])) seen++;
-                    position++;
-                }
-
-                // если цифру только что убрали, курсор остаётся на месте
-                if (PhoneMask.Digits(Text).Length < wasDigits) position = Math.Min(caret, Text.Length);
-
-                SelectionStart = Math.Min(position, Text.Length);
+                SelectionStart = PhoneMask.PositionAfterDigits(Text, digitsBefore);
+                SelectionLength = 0;
             }
             finally
             {
