@@ -201,7 +201,7 @@ namespace KotovCalc
                 _fields.Plate = customer.Plate;
 
                 _customerPick.Text = customer.Name;
-                _phoneBox.Text = customer.Phone;
+                _phoneBox.Value = customer.Phone;
                 _carBox.Text = customer.Car;
                 _plateBox.Text = customer.Plate;
 
@@ -229,7 +229,7 @@ namespace KotovCalc
                 _fields.Plate = "";
 
                 _customerPick.Text = "";
-                _phoneBox.Text = "";
+                _phoneBox.Value = "";
                 _carBox.Text = "";
                 _plateBox.Text = "";
             }
@@ -271,7 +271,7 @@ namespace KotovCalc
             try
             {
                 _customerPick.Text = _fields.Customer;
-                _phoneBox.Text = _fields.CustomerPhone;
+                _phoneBox.Value = _fields.CustomerPhone;
                 _carBox.Text = _fields.Car;
                 _plateBox.Text = _fields.Plate;
             }

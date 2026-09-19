@@ -26,7 +26,7 @@ namespace KotovCalc
         private ListView _list;
         private Label _info;
         private TextBox _name;
-        private TextBox _phone;
+        private PhoneBox _phone;
         private TextBox _car;
         private TextBox _plate;
         private TextBox _note;
@@ -230,7 +230,7 @@ namespace KotovCalc
 
             _current = customer;
             _name.Text = customer.Name;
-            _phone.Text = customer.Phone;
+            _phone.Value = customer.Phone;
             _car.Text = customer.Car;
             _plate.Text = customer.Plate;
             _note.Text = customer.Note;
@@ -248,7 +248,7 @@ namespace KotovCalc
             if (_current == null) return;
 
             _current.Name = _name.Text.Trim();
-            _current.Phone = _phone.Text.Trim();
+            _current.Phone = PhoneMask.Format(_phone.Text);
             _current.Car = _car.Text.Trim();
             _current.Plate = _plate.Text.Trim();
             _current.Note = _note.Text;
