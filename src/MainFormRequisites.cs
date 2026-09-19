@@ -90,9 +90,9 @@ namespace KotovCalc
             _customerPick.TextChanged += CustomerTyped;
             top.Controls.Add(_customerPick);
 
-            _btnPickCustomer = MakeButton("Выбрать", 100);
+            _btnPickCustomer = MakeButton("Найти", 100);
             _btnPickCustomer.Location = new Point(338, 123);
-            _btnPickCustomer.Click += delegate { PickCustomer(); };
+            _btnPickCustomer.Click += delegate { PickCustomer(); };   // поиск и выбор заказчика
             top.Controls.Add(_btnPickCustomer);
 
             _btnClearCustomer = MakeButton("Очистить", 100);
@@ -174,7 +174,7 @@ namespace KotovCalc
 
             string chosen;
 
-            using (PickForm pick = new PickForm("Выбор заказчика", captions))
+            using (PickForm pick = new PickForm("Поиск заказчика", captions))
             {
                 if (pick.ShowDialog(this) != DialogResult.OK) return;
                 chosen = pick.Selected;
