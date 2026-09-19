@@ -111,6 +111,16 @@ namespace KotovCalc
                 if (!client.Execute(command)) return client.LastError;
             }
 
+            // колонки, добавленные после первой версии
+            string[] later = new string[]
+            {
+                "ALTER TABLE smeta_prices ADD COLUMN IF NOT EXISTS cost numeric(12,2) NOT NULL DEFAULT 0",
+                "ALTER TABLE smeta_prices ADD COLUMN IF NOT EXISTS min_stock numeric(12,3) NOT NULL DEFAULT 0"
+            };
+
+            foreach (string command2 in later)
+                if (!client.Execute(command2)) return client.LastError;
+
             return null;
         }
 
@@ -123,7 +133,7 @@ namespace KotovCalc
             using (PgClient client = Open())
             {
                 List<PgRow> rows = client.Query(
-                    "SELECT grp, article, name, unit, price FROM smeta_prices ORDER BY sort_order, id");
+                    "SELECT grp, article, name, unit, price, cost, min_stock FROM smeta_prices ORDER BY sort_order, id");
 
                 if (rows == null) throw new PgException(client.LastError);
 
@@ -136,6 +146,8 @@ namespace KotovCalc
                     item.Unit = Text(row["unit"]);
                     if (item.Unit.Length == 0) item.Unit = Uom.List[0];
                     item.Price = Number(row["price"]);
+                item.Cost = Number(row["cost"]);
+                item.MinStock = Number(row["min_stock"]);
                     items.Add(item);
                 }
             }
@@ -156,10 +168,10 @@ namespace KotovCalc
                 {
                     order++;
                     bool ok = client.Execute(
-                        "INSERT INTO smeta_prices (grp, article, name, unit, price, sort_order) " +
-                        "VALUES ($1, $2, $3, $4, $5, $6)",
+                        "INSERT INTO smeta_prices (grp, article, name, unit, price, cost, min_stock, sort_order) " +
+                        "VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
                         item.Group ?? "", item.Article ?? "", item.Name ?? "",
-                        item.Unit ?? Uom.List[0], item.Price, order);
+                        item.Unit ?? Uom.List[0], item.Price, item.Cost, item.MinStock, order);
 
                     if (!ok)
                     {
@@ -300,6 +312,9 @@ namespace KotovCalc
 
             snapshot.Document.Number = Get(settings, "number");
             snapshot.Document.Customer = Get(settings, "customer");
+            snapshot.Document.CustomerPhone = PhoneMask.Format(Get(settings, "phone"));
+            snapshot.Document.Car = Get(settings, "car");
+            snapshot.Document.Plate = Get(settings, "plate");
 
             decimal discount;
             if (decimal.TryParse(Get(settings, "discount"), NumberStyles.Number,
@@ -321,6 +336,9 @@ namespace KotovCalc
             Dictionary<string, string> settings = new Dictionary<string, string>(StringComparer.Ordinal);
             settings["number"] = snapshot.Document.Number ?? "";
             settings["customer"] = snapshot.Document.Customer ?? "";
+            settings["phone"] = PhoneMask.Format(snapshot.Document.CustomerPhone) ?? "";
+            settings["car"] = snapshot.Document.Car ?? "";
+            settings["plate"] = snapshot.Document.Plate ?? "";
             settings["discount"] = snapshot.Document.Discount.ToString("0.##", CultureInfo.InvariantCulture);
             settings["theme"] = snapshot.Theme == "dark" ? "dark" : "light";
             settings["logo"] = snapshot.Logo ?? "";

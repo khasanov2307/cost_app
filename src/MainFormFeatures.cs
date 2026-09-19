@@ -719,101 +719,100 @@ namespace KotovCalc
             menu.Show(_btnTheme, new Point(0, _btnTheme.Height));
         }
 
+        /// <summary>Выгрузка всех данных программы в один файл.</summary>
         private void ExportData()
         {
             SaveFileDialog dialog = new SaveFileDialog();
-            dialog.Title = "Выгрузить данные программы";
-            dialog.Filter = "Данные программы (*" + DataExchange.Extension + ")|*" + DataExchange.Extension +
-                            "|Все файлы (*.*)|*.*";
+            dialog.Title = "Выгрузить все данные программы";
+            dialog.Filter = "Данные программы (*.zip)|*.zip|Все файлы (*.*)|*.*";
             dialog.InitialDirectory = PriceBook.StoreFolder;
-            dialog.FileName = "Заявки_данные_" + DateTime.Now.ToString("yyyy-MM-dd") + DataExchange.Extension;
+            dialog.FileName = FullBackup.SuggestedFileName(DateTime.Now);
 
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
             try
             {
-                DataExchange.Save(dialog.FileName, _catalog, _settings, _templates);
-                SetStatus("Данные выгружены: " + dialog.FileName +
-                          "  •  позиций: " + _catalog.Count + ", наборов: " + _templates.Count);
+                FullBackup.Save(dialog.FileName);
+
+                SetStatus("Все данные выгружены: " + dialog.FileName +
+                          "   •   позиций: " + _catalog.Count +
+                          ", наборов: " + _templates.Count);
+
+                MessageBox.Show(this,
+                    "Данные выгружены в файл:\\n" + dialog.FileName + "\\n\\n" +
+                    "В него попали каталог, наборы услуг, реквизиты с темой и логотипом, " +
+                    "заявки со статусами, заказчики, склад и кассы с оплатами.\\n\\n" +
+                    "Сохраните файл: он понадобится при переходе на новую версию программы.",
+                    "Выгрузка данных", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Не удалось выгрузить данные:\n" + ex.Message,
-                    "Обмен данными", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, "Не удалось выгрузить данные:\\n" + ex.Message,
+                    "Выгрузка данных", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
+        /// <summary>Загрузка всех данных программы из файла выгрузки.</summary>
         private void ImportData()
         {
             OpenFileDialog dialog = new OpenFileDialog();
-            dialog.Title = "Загрузить данные программы";
-            dialog.Filter = "Данные программы (*" + DataExchange.Extension + ")|*" + DataExchange.Extension +
-                            "|Все файлы (*.*)|*.*";
+            dialog.Title = "Загрузить все данные программы";
+            dialog.Filter = "Данные программы (*.zip)|*.zip|Все файлы (*.*)|*.*";
             dialog.InitialDirectory = PriceBook.StoreFolder;
 
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
             string error;
-            DataBundle bundle = DataExchange.Load(dialog.FileName, out error);
+            BackupContent content = FullBackup.Inspect(dialog.FileName, out error);
 
-            if (bundle == null)
+            if (content == null)
             {
-                MessageBox.Show(this, error == null ? "Не удалось прочитать файл." : error,
-                    "Обмен данными", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, "Файл не подходит:\\n" + error,
+                    "Загрузка данных", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            string question = "Загрузить данные из файла?\n\n" + bundle.Summary();
-            if (bundle.HasPrices) question += "\nКаталог номенклатуры будет заменён.";
-            if (bundle.HasSettings) question += "\nРеквизиты и скидка будут заменены.";
+            string question =
+                "Загрузить данные из файла?\\n\\n" +
+                "Выгружен: " + content.Created + "\\n" +
+                "Из хранилища: " + content.Source + "\\n" +
+                "Содержимое: " + content.Summary() + "\\n\\n" +
+                "Данные текущего хранилища будут заменены по этим разделам.";
 
-            if (MessageBox.Show(this, question, "Обмен данными",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+            if (MessageBox.Show(this, question, "Загрузка данных",
+                    MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
                 return;
 
             try
             {
-                if (bundle.HasPrices)
-                {
-                    PriceBook.Save(bundle.Prices);
-                    ReloadPricesPreserving();
-                }
+                BackupContent loaded = FullBackup.Restore(dialog.FileName);
 
-                if (bundle.Templates.Count > 0)
-                {
-                    _templates = bundle.Templates;
-                    TemplateStore.Save(_templates);
-                }
+                // перечитываем всё, что показано на экране
+                ReloadEverything();
 
-                if (bundle.HasSettings)
-                {
-                    _fields.Number = bundle.Document.Number;
-                    _fields.Customer = bundle.Document.Customer;
-                    _fields.Discount = bundle.Document.Discount;
-                    _dark = bundle.Theme == "dark";
+                SetStatus("Данные загружены: " + loaded.Summary());
 
-                    _settings.Number = _fields.Number;
-                    _settings.Customer = _fields.Customer;
-                    _settings.Discount = _fields.Discount;
-                    _settings.Theme = _dark ? "dark" : "light";
-                    _settings.Save();
-
-                    ApplyThemeColors();
-                    RestyleRows();
-                    RestoreFormState();
-            StartWebService();
-            ShowLogo();
-                }
-
-                FillTemplateList("");
-                SetStatus("Данные загружены: " + bundle.Summary());
+                MessageBox.Show(this, "Данные загружены.\\n\\n" + loaded.Summary(),
+                    "Загрузка данных", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Не удалось применить данные:\n" + ex.Message,
-                    "Обмен данными", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, "Не удалось загрузить данные:\\n" + ex.Message,
+                    "Загрузка данных", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
+
+        /// <summary>Перечитать данные после загрузки из файла.</summary>
+        private void ReloadEverything()
+        {
+            _cashLoaded = false;
+            _customersLoaded = false;
+            _warehouseLoaded = false;
+
+            ReloadPricesPreserving();
+            RestoreFormState();
+        }
+
 
         private void OpenDataFolder()
         {

@@ -19,6 +19,9 @@ namespace KotovCalc
         public string Theme = "light";          // light | dark
         public string Number = "";              // номер заявки
         public string Customer = "";            // ФИО заказчика
+        public string CustomerPhone = "";       // телефон заказчика
+        public string Car = "";                 // автомобиль
+        public string Plate = "";               // госномер
         public decimal Discount = 0m;           // скидка на всю заявку, %
         public string LastTemplate = "";
         public string Logo = "";                // путь к файлу логотипа компании
@@ -52,6 +55,9 @@ namespace KotovCalc
                         case "theme": settings.Theme = value == "dark" ? "dark" : "light"; break;
                         case "number": settings.Number = value; break;
                         case "customer": settings.Customer = value; break;
+                case "phone": settings.CustomerPhone = value; break;
+                case "car": settings.Car = value; break;
+                case "plate": settings.Plate = value; break;
                         case "discount":
                             decimal discount;
                             if (decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out discount))
@@ -76,6 +82,9 @@ namespace KotovCalc
                 sb.AppendLine("theme=" + (Theme == "dark" ? "dark" : "light"));
                 sb.AppendLine("number=" + Clean(Number));
                 sb.AppendLine("customer=" + Clean(Customer));
+            sb.AppendLine("phone=" + Clean(CustomerPhone));
+            sb.AppendLine("car=" + Clean(Car));
+            sb.AppendLine("plate=" + Clean(Plate));
                 sb.AppendLine("discount=" + Discount.ToString("0.##", CultureInfo.InvariantCulture));
                 sb.AppendLine("template=" + Clean(LastTemplate));
                 sb.AppendLine("logo=" + Clean(Logo));

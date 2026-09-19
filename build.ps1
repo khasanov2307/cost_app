@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 #  Build script for the "Service cost calculator" Windows program.
 #
 #  Requires nothing but what Windows already has: the C# compiler shipped with
@@ -84,6 +84,7 @@ $arguments.Add('/reference:System.dll')
 $arguments.Add('/reference:System.Drawing.dll')
 $arguments.Add('/reference:System.Windows.Forms.dll')
 $arguments.Add('/reference:System.IO.Compression.dll')
+$arguments.Add('/reference:System.IO.Compression.FileSystem.dll')
 $arguments.Add("/out:$exePath")
 $arguments.Add("/resource:$seedTemp,KotovCalc.Seed.tsv")
 if (Test-Path -LiteralPath $iconPath) {

@@ -3,6 +3,7 @@ PhoneMask.cs
 SimpleJson.cs
 AppSettings.cs
 DataExchange.cs
+FullBackup.cs
 PgClient.cs
 DataStore.cs
 SqlDataStore.cs

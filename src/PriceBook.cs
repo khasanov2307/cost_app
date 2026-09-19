@@ -168,6 +168,12 @@ namespace KotovCalc
                     writer.WriteElementString("Unit", item.Unit);
                     writer.WriteElementString("Price",
                         item.Price.ToString("0.##", CultureInfo.InvariantCulture));
+                    if (item.Cost > 0m)
+                        writer.WriteElementString("Cost",
+                            item.Cost.ToString("0.##", CultureInfo.InvariantCulture));
+                    if (item.MinStock > 0m)
+                        writer.WriteElementString("MinStock",
+                            item.MinStock.ToString("0.###", CultureInfo.InvariantCulture));
                     writer.WriteEndElement();
                 }
 
@@ -202,6 +208,14 @@ namespace KotovCalc
                 decimal price = 0m;
                 Fmt.TryParseDecimal(Text(node, "Price"), out price);
                 item.Price = price;
+
+                decimal cost = 0m;
+                Fmt.TryParseDecimal(Text(node, "Cost"), out cost);
+                item.Cost = cost;
+
+                decimal minStock = 0m;
+                Fmt.TryParseDecimal(Text(node, "MinStock"), out minStock);
+                item.MinStock = minStock;
 
                 Normalize(item);
                 if (item.Name.Length == 0) continue;
@@ -322,7 +336,7 @@ namespace KotovCalc
 
                 if (parts.Length >= 5)
                 {
-                    // новый формат: Группа, Артикул, Наименование, Ед. изм., Цена
+                    // формат: Группа, Артикул, Наименование, Ед. изм., Цена[, Закупка[, Минимум]]
                     item.Article = parts[1].Trim();
                     item.Name = parts[2].Trim();
                     item.Unit = parts[3].Trim();
@@ -330,6 +344,20 @@ namespace KotovCalc
                     decimal newPrice = 0m;
                     Fmt.TryParseDecimal(parts[4], out newPrice);
                     item.Price = newPrice;
+
+                    if (parts.Length > 5)
+                    {
+                        decimal newCost = 0m;
+                        Fmt.TryParseDecimal(parts[5], out newCost);
+                        item.Cost = newCost;
+                    }
+
+                    if (parts.Length > 6)
+                    {
+                        decimal minStock = 0m;
+                        Fmt.TryParseDecimal(parts[6], out minStock);
+                        item.MinStock = minStock;
+                    }
                 }
                 else
                 {

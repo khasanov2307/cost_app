@@ -124,6 +124,9 @@ namespace KotovCalc
             AppSettings settings = AppSettings.Load();
             snapshot.Document.Number = settings.Number;
             snapshot.Document.Customer = settings.Customer;
+            snapshot.Document.CustomerPhone = PhoneMask.Format(settings.CustomerPhone);
+            snapshot.Document.Car = settings.Car;
+            snapshot.Document.Plate = settings.Plate;
             snapshot.Document.Discount = settings.Discount;
             snapshot.Document.Normalize();
             snapshot.Theme = settings.Theme;
@@ -139,6 +142,9 @@ namespace KotovCalc
             AppSettings settings = AppSettings.Load();
             settings.Number = snapshot.Document.Number;
             settings.Customer = snapshot.Document.Customer;
+            settings.CustomerPhone = PhoneMask.Format(snapshot.Document.CustomerPhone);
+            settings.Car = snapshot.Document.Car;
+            settings.Plate = snapshot.Document.Plate;
             settings.Discount = snapshot.Document.Discount;
             settings.Theme = snapshot.Theme;
             settings.Logo = snapshot.Logo;

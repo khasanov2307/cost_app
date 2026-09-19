@@ -26,6 +26,7 @@ $outFilter = Join-Path $test 'FilterProbe.exe'
 $outNew = Join-Path $test 'Harness10.exe'
 $outPhone = Join-Path $test 'PhoneProbe.exe'
 $outStock = Join-Path $test 'StockProbe.exe'
+$outBackup = Join-Path $test 'Harness11.exe'
 $outDrop = Join-Path $test 'CustomerDropProbe.exe'
 $webName = -join @(0x0421,0x043C,0x0435,0x0442,0x0430 | ForEach-Object { [char]$_ }) + '.html'
 
@@ -58,7 +59,7 @@ foreach ($name in [System.IO.File]::ReadAllLines($manifest, [System.Text.Encodin
 if ($sourceList.Count -eq 0) { throw "Source list is empty: $manifest" }
 
 $commonRefs = @('/reference:System.dll', '/reference:System.Drawing.dll',
-                '/reference:System.Windows.Forms.dll', '/reference:System.IO.Compression.dll')
+    '/reference:System.Windows.Forms.dll', '/reference:System.IO.Compression.dll', '/reference:System.IO.Compression.FileSystem.dll')
 $commonArgs = @('/nologo', '/target:exe', '/platform:anycpu', '/utf8output',
                 "/resource:$seedTemp,KotovCalc.Seed.tsv")
 
@@ -92,6 +93,11 @@ if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCOD
 Write-Host '==> Compiling the stock column checks' -ForegroundColor Cyan
 & $csc $commonArgs $commonRefs /main:StockProbe "/out:$outStock" $sourceList `
     (Join-Path $test 'StockProbe.cs')
+if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
+
+Write-Host '==> Compiling the backup checks' -ForegroundColor Cyan
+& $csc $commonArgs $commonRefs /main:Harness11 "/out:$outBackup" $sourceList `
+    (Join-Path $test 'Harness11.cs')
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed with exit code $LASTEXITCODE" }
 
 Write-Host '==> Compiling the phone mask checks' -ForegroundColor Cyan
@@ -218,6 +224,11 @@ if ($LASTEXITCODE -ne 0) { throw "Stock checks failed with exit code $LASTEXITCO
 Write-Host '==> Checking the customer search' -ForegroundColor Cyan
 & $outDrop
 if ($LASTEXITCODE -ne 0) { throw "Customer search checks failed with exit code $LASTEXITCODE" }
+
+Write-Host '==> Checking the data export and import' -ForegroundColor Cyan
+& $outBackup 127.0.0.1 smeta smeta smeta
+$code = $LASTEXITCODE
+if ($code -ne 0) { throw "Backup checks failed with exit code $code" }
 
 if ($databaseReady) {
     & $out6 127.0.0.1 smeta smeta smeta
